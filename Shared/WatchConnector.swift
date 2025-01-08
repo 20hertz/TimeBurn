@@ -8,9 +8,9 @@
 import WatchConnectivity
 import Combine
 
-class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+class WatchConnector: NSObject, ObservableObject, WCSessionDelegate {
     
-    static let shared = WatchConnectivityManager()
+    static let shared = WatchConnector()
     
     @Published var todos: [Todo] = [] {
         didSet {

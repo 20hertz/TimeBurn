@@ -18,13 +18,13 @@ class TodoModel: ObservableObject {
     @Published var todos: [Todo] = [] {
         didSet {
             syncWithWatch()
-            WatchConnectivityManager.shared.todos = todos // Persist todos
+            WatchConnector.shared.todos = todos // Persist todos
         }
     }
     
     init() {
         // Load persisted todos from WatchConnectivityManager
-        todos = WatchConnectivityManager.shared.todos
+        todos = WatchConnector.shared.todos
     }
     
     func addTodo(title: String) {
@@ -38,7 +38,7 @@ class TodoModel: ObservableObject {
     
     private func syncWithWatch() {
         #if os(iOS)
-        WatchConnectivityManager.shared.send(todos: todos)
+        WatchConnector.shared.send(todos: todos)
         #endif
     }
 }

@@ -12,7 +12,7 @@ struct GymTimeApp: App {
     @StateObject private var todoModel = TodoModel()
 
     init() {
-        _ = WatchConnectivityManager.shared // Activate and retain shared instance
+        _ = WatchConnector.shared // Activate and retain shared instance
     }
     
     var body: some Scene {

@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct GymTime_WatchApp: App {
     init() {
-        _ = WatchConnectivityManager.shared // Activate and retain shared instance
+        _ = WatchConnector.shared // Activate and retain shared instance
     }
     
     var body: some Scene {
