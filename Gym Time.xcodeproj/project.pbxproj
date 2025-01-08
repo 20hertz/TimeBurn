@@ -6,14 +6,57 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F4F26E732D2D82AB00AA8B3D /* GT Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F4F26E662D2D82A800AA8B3D /* GT Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F4F26E982D2D928300AA8B3D /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */; };
+		F4F26E9A2D2D928C00AA8B3D /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F4F26E712D2D82AB00AA8B3D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F4F26E492D2D826200AA8B3D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F4F26E652D2D82A800AA8B3D;
+			remoteInfo = "GT Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F4F26E772D2D82AB00AA8B3D /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				F4F26E732D2D82AB00AA8B3D /* GT Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		F4F26E512D2D826200AA8B3D /* Gym Time.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Gym Time.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4F26E662D2D82A800AA8B3D /* GT Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "GT Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.1.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F4F26E532D2D826200AA8B3D /* Gym Time */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Gym Time";
+			sourceTree = "<group>";
+		};
+		F4F26E672D2D82A800AA8B3D /* GT Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "GT Watch App";
+			sourceTree = "<group>";
+		};
+		F4F26EA42D2E27D000AA8B3D /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +66,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4F26E982D2D928300AA8B3D /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4F26E632D2D82A800AA8B3D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4F26E9A2D2D928C00AA8B3D /* WatchConnectivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,7 +84,10 @@
 		F4F26E482D2D826200AA8B3D = {
 			isa = PBXGroup;
 			children = (
+				F4F26EA42D2E27D000AA8B3D /* Shared */,
 				F4F26E532D2D826200AA8B3D /* Gym Time */,
+				F4F26E672D2D82A800AA8B3D /* GT Watch App */,
+				F4F26E962D2D928200AA8B3D /* Frameworks */,
 				F4F26E522D2D826200AA8B3D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +96,18 @@
 			isa = PBXGroup;
 			children = (
 				F4F26E512D2D826200AA8B3D /* Gym Time.app */,
+				F4F26E662D2D82A800AA8B3D /* GT Watch App.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F4F26E962D2D928200AA8B3D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */,
+				F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,19 +120,45 @@
 				F4F26E4D2D2D826200AA8B3D /* Sources */,
 				F4F26E4E2D2D826200AA8B3D /* Frameworks */,
 				F4F26E4F2D2D826200AA8B3D /* Resources */,
+				F4F26E772D2D82AB00AA8B3D /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F4F26E722D2D82AB00AA8B3D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F4F26E532D2D826200AA8B3D /* Gym Time */,
+				F4F26EA42D2E27D000AA8B3D /* Shared */,
 			);
 			name = "Gym Time";
 			packageProductDependencies = (
 			);
 			productName = "Gym Time";
 			productReference = F4F26E512D2D826200AA8B3D /* Gym Time.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F4F26E652D2D82A800AA8B3D /* GT Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4F26E742D2D82AB00AA8B3D /* Build configuration list for PBXNativeTarget "GT Watch App" */;
+			buildPhases = (
+				F4F26E622D2D82A800AA8B3D /* Sources */,
+				F4F26E632D2D82A800AA8B3D /* Frameworks */,
+				F4F26E642D2D82A800AA8B3D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F4F26E672D2D82A800AA8B3D /* GT Watch App */,
+				F4F26EA42D2E27D000AA8B3D /* Shared */,
+			);
+			name = "GT Watch App";
+			packageProductDependencies = (
+			);
+			productName = "GT Watch App";
+			productReference = F4F26E662D2D82A800AA8B3D /* GT Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -81,6 +172,9 @@
 				LastUpgradeCheck = 1610;
 				TargetAttributes = {
 					F4F26E502D2D826200AA8B3D = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					F4F26E652D2D82A800AA8B3D = {
 						CreatedOnToolsVersion = 16.1;
 					};
 				};
@@ -100,12 +194,20 @@
 			projectRoot = "";
 			targets = (
 				F4F26E502D2D826200AA8B3D /* Gym Time */,
+				F4F26E652D2D82A800AA8B3D /* GT Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F4F26E4F2D2D826200AA8B3D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4F26E642D2D82A800AA8B3D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +224,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4F26E622D2D82A800AA8B3D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F4F26E722D2D82AB00AA8B3D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F4F26E652D2D82A800AA8B3D /* GT Watch App */;
+			targetProxy = F4F26E712D2D82AB00AA8B3D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F4F26E5D2D2D826400AA8B3D /* Debug */ = {
@@ -249,6 +366,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Gym Time/Gym Time.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Gym Time/Preview Content\"";
@@ -278,6 +396,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Gym Time/Gym Time.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Gym Time/Preview Content\"";
@@ -302,6 +421,68 @@
 			};
 			name = Release;
 		};
+		F4F26E752D2D82AB00AA8B3D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "GT Watch App/GT Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"GT Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = 6WFCS7KCCN;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = GT;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.slo.Gym-Time";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.slo.Gym-Time.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.1;
+			};
+			name = Debug;
+		};
+		F4F26E762D2D82AB00AA8B3D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "GT Watch App/GT Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"GT Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = 6WFCS7KCCN;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = GT;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.slo.Gym-Time";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.slo.Gym-Time.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -319,6 +500,15 @@
 			buildConfigurations = (
 				F4F26E602D2D826400AA8B3D /* Debug */,
 				F4F26E612D2D826400AA8B3D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F4F26E742D2D82AB00AA8B3D /* Build configuration list for PBXNativeTarget "GT Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F26E752D2D82AB00AA8B3D /* Debug */,
+				F4F26E762D2D82AB00AA8B3D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,6 +1,6 @@
 //
-//  Gym_TimeApp.swift
-//  Gym Time
+//  GTApp.swift
+//  GT Watch App
 //
 //  Created by Stéphane on 2025-01-07.
 //
@@ -8,9 +8,7 @@
 import SwiftUI
 
 @main
-struct GymTimeApp: App {
-    @StateObject private var todoModel = TodoModel()
-
+struct GymTime_WatchApp: App {
     init() {
         _ = WatchConnectivityManager.shared // Activate and retain shared instance
     }
@@ -18,12 +16,6 @@ struct GymTimeApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
-                .environmentObject(todoModel)
         }
     }
-}
-
-#Preview {
-    HomeView()
-        .environmentObject(TodoModel())
 }
