@@ -9,17 +9,17 @@
 import SwiftUI
 
 struct HomeView: View {
-    @EnvironmentObject var todoModel: TodoModel
+    @EnvironmentObject var timerModel: TimerModel
     
     var body: some View {
         NavigationStack {
             List {
-                ForEach(todoModel.todos) { todo in
-                    Text(todo.title)
+                ForEach(timerModel.timers) { timer in
+                    Text(timer.name)
                 }
-                .onDelete(perform: todoModel.deleteTodo)
+                .onDelete(perform: timerModel.deleteTimer)
             }
-            .navigationTitle("To-Do List")
+            .navigationTitle("Gym Time")
             .toolbar {
                 NavigationLink("Create", destination: CreateView())
             }

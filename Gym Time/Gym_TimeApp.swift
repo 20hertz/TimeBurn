@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct GymTimeApp: App {
-    @StateObject private var todoModel = TodoModel()
+    @StateObject private var timerModel = TimerModel()
 
     init() {
         _ = WatchConnector.shared // Activate and retain shared instance
@@ -18,12 +18,12 @@ struct GymTimeApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
-                .environmentObject(todoModel)
+                .environmentObject(timerModel)
         }
     }
 }
 
 #Preview {
     HomeView()
-        .environmentObject(TodoModel())
+        .environmentObject(TimerModel())
 }

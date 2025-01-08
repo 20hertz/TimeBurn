@@ -4,7 +4,6 @@
 //
 //  Created by Stéphane on 2025-01-07.
 //
-
 import WatchConnectivity
 import Combine
 
@@ -12,42 +11,45 @@ class WatchConnector: NSObject, ObservableObject, WCSessionDelegate {
     
     static let shared = WatchConnector()
     
-    @Published var todos: [Todo] = [] {
+    @Published var timers: [Timer] = [] {
         didSet {
-            saveTodos()
+            saveTimers()
         }
     }
     
-    private let storageKey = "todos"
+    private let storageKey = "timers"
     private let appGroupID = "group.com.slo.Gym-Time"
     
     private override init() {
         super.init()
-        loadTodos() // Load todos from shared storage
-        activateSession() // Activate WCSession
+        loadTimers()
+        activateSession()
     }
     
     // MARK: - Persistence
-    private func saveTodos() {
+    private func saveTimers() {
         guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
             print("Error: Shared UserDefaults not available.")
             return
         }
         do {
-            let data = try JSONEncoder().encode(todos)
+            let data = try JSONEncoder().encode(timers)
             sharedDefaults.set(data, forKey: storageKey)
         } catch {
-            print("Error saving todos: \(error.localizedDescription)")
+            print("Error saving timers: \(error.localizedDescription)")
         }
     }
     
-    private func loadTodos() {
+    private func loadTimers() {
         guard let sharedDefaults = UserDefaults(suiteName: appGroupID),
-              let data = sharedDefaults.data(forKey: storageKey) else { return }
+              let data = sharedDefaults.data(forKey: storageKey) else {
+            print("No timers found in shared UserDefaults.")
+            return
+        }
         do {
-            todos = try JSONDecoder().decode([Todo].self, from: data)
+            timers = try JSONDecoder().decode([Timer].self, from: data)
         } catch {
-            print("Error loading todos: \(error.localizedDescription)")
+            print("Error loading timers: \(error.localizedDescription)")
         }
     }
     
@@ -58,25 +60,30 @@ class WatchConnector: NSObject, ObservableObject, WCSessionDelegate {
         WCSession.default.activate()
     }
     
-    func send(todos: [Todo]) {
-        guard WCSession.default.isReachable else { return }
+    func send(timers: [Timer]) {
+        guard WCSession.default.isReachable else {
+            print("WCSession not reachable.")
+            return
+        }
         do {
-            let data = try JSONEncoder().encode(todos)
-            WCSession.default.sendMessage(["todos": data], replyHandler: nil, errorHandler: nil)
+            let data = try JSONEncoder().encode(timers)
+            WCSession.default.sendMessage(["timers": data], replyHandler: nil) { error in
+                print("Error sending message: \(error.localizedDescription)")
+            }
         } catch {
-            print("Error encoding todos: \(error.localizedDescription)")
+            print("Error encoding timers: \(error.localizedDescription)")
         }
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        guard let data = message["todos"] as? Data else { return }
+        guard let data = message["timers"] as? Data else { return }
         do {
-            let receivedTodos = try JSONDecoder().decode([Todo].self, from: data)
+            let receivedTimers = try JSONDecoder().decode([Timer].self, from: data)
             DispatchQueue.main.async {
-                self.todos = receivedTodos
+                self.timers = receivedTimers
             }
         } catch {
-            print("Error decoding todos: \(error.localizedDescription)")
+            print("Error decoding timers: \(error.localizedDescription)")
         }
     }
     
@@ -86,10 +93,14 @@ class WatchConnector: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
     
+    
     #if os(iOS)
-    func sessionDidBecomeInactive(_ session: WCSession) { }
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        print("WCSession became inactive.")
+    }
     
     func sessionDidDeactivate(_ session: WCSession) {
+        print("WCSession deactivated, reactivating.")
         session.activate()
     }
     #endif
