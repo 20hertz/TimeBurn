@@ -34,6 +34,16 @@ struct TimerView: View {
                         .foregroundColor(.blue)
                 }
             }
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: {}) {
+                    Image(systemName: "play.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.blue)
+                        .clipShape(Circle()) // Makes the button round
+                }
+            }
         }
     }
 }

@@ -20,7 +20,11 @@ struct TimerView: View {
                 .font(.subheadline)
                 .padding(.bottom)
 
-            Spacer()
+            Button(action: {}) {
+                Image(systemName: "play.fill")
+                    .resizable()
+                    .frame(width: 30, height: 30)
+            }
         }
         .navigationTitle(timer.name)
     }
