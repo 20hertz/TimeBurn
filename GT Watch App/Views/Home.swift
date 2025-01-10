@@ -13,10 +13,17 @@ struct HomeView: View {
     var body: some View {
         List {
             ForEach(connector.timers) { timer in
-                Text(timer.name)
+                NavigationLink(destination: TimerView(timer: timer)) {
+                    VStack(alignment: .leading) {
+                        Text(timer.name)
+                            .font(.headline)
+                        Text("\(timer.rounds) x \(timer.activeDuration)s | \(timer.restDuration)s")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
         }
-        .navigationTitle("Gym Time")
     }
 }
 

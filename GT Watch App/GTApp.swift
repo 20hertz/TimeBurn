@@ -17,8 +17,10 @@ struct GymTime_WatchApp: App {
     
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .environmentObject(timerModel)
+            NavigationStack {
+                HomeView()
+                    .environmentObject(timerModel)
+            }
         }
     }
 }
