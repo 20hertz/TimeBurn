@@ -9,50 +9,44 @@
 import Foundation
 import Combine
 
-struct Timer: Identifiable, Codable {
-    let id: UUID
-    var name: String
-    var activeDuration: Int
-    var restDuration: Int
-    var rounds: Int
-    var currentRound: Int = 1
-    var isRunning: Bool = false
-    var remainingTime: Int
-    var isActivePeriod: Bool = true
-}
-
-class TimerModel: ObservableObject {
-    @Published var timers: [Timer] = [] {
-        didSet {
-            syncWithWatch()
-            WatchConnector.shared.timers = timers // Persist timers
-        }
-    }
+/// A publicly visible model representing a configurable interval timer.
+///
+/// Conforms to:
+/// - `Identifiable`: for use in SwiftUI lists.
+/// - `Codable`: for persistence and sending across WatchConnectivity.
+/// - `Equatable`: to compare items.
+///
+/// Only stores permanent, user-defined configuration.
+/// Does *not* store runtime state like remaining time or current round.
+/// That state lives in memory only (e.g., within TimerEngine).
+public struct IntervalTimer: Identifiable, Codable, Equatable, Hashable {
+    /// Unique identifier
+    public let id: UUID
     
-    init() {
-        // Load persisted timers from WatchConnector
-        timers = WatchConnector.shared.timers
-    }
+    /// Display name
+    public var name: String
     
-    func addTimer(name: String, activeDuration: Int, restDuration: Int, rounds: Int) {
-        let newTimer = Timer(
-            id: UUID(),
-            name: name,
-            activeDuration: activeDuration,
-            restDuration: restDuration,
-            rounds: rounds,
-            remainingTime: activeDuration
-        )
-        timers.append(newTimer)
-    }
+    /// Duration of the "active" period in seconds
+    public var activeDuration: Int
     
-    func deleteTimer(at offsets: IndexSet) {
-        timers.remove(atOffsets: offsets)
-    }
+    /// Duration of the "rest" period in seconds
+    public var restDuration: Int
     
-    private func syncWithWatch() {
-        #if os(iOS)
-        WatchConnector.shared.send(timers: timers)
-        #endif
+    /// Total number of rounds. If 0, runs indefinitely.
+    public var totalRounds: Int
+    
+    /// Creates a new IntervalTimer.
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        activeDuration: Int,
+        restDuration: Int,
+        totalRounds: Int
+    ) {
+        self.id = id
+        self.name = name
+        self.activeDuration = activeDuration
+        self.restDuration = restDuration
+        self.totalRounds = totalRounds
     }
 }
