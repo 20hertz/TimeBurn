@@ -7,32 +7,41 @@
 
 import SwiftUI
 
-struct HomeView: View {
-    @StateObject private var connector = WatchConnector.shared
+struct WatchHomeView: View {
+    @EnvironmentObject var timerManager: TimerManager
 
     var body: some View {
         List {
-            ForEach(connector.timers) { timer in
-                NavigationLink(destination: TimerView(timer: timer)) {
+            ForEach(timerManager.timers) { timer in
+                NavigationLink(destination: WatchTimerView(engine: ActiveTimerEngines.shared.engine(for: timer))) {
                     VStack(alignment: .leading) {
                         Text(timer.name)
                             .font(.headline)
-                        Text("\(timer.rounds) x \(timer.activeDuration)s | \(timer.restDuration)s")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(format(seconds: timer.activeDuration)) | \(format(seconds: timer.restDuration))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
         }
+        .navigationTitle("Timers")
+    }
+
+    private func format(seconds: Int) -> String {
+        let minutes = seconds / 60
+        let secondsPart = seconds % 60
+        return String(format: "%d:%02d", minutes, secondsPart)
     }
 }
 
 #Preview {
-    let sampleModel = TimerModel()
-    sampleModel.timers = [
-        Timer(id: UUID(), name: "Timer A", activeDuration: 30, restDuration: 10, rounds: 5, remainingTime: 30),
-        Timer(id: UUID(), name: "Timer B", activeDuration: 45, restDuration: 15, rounds: 3, remainingTime: 45)
-    ]
-    return HomeView()
-        .environmentObject(sampleModel)
+    let previewManager = TimerManager.shared
+    previewManager.setTimers([
+        IntervalTimer(name: "Circuit", activeDuration: 45, restDuration: 15, totalRounds: 6),
+        IntervalTimer(name: "Sprint", activeDuration: 30, restDuration: 30, totalRounds: 5)
+    ])
+    return NavigationView {
+        WatchHomeView()
+            .environmentObject(previewManager)
+    }
 }

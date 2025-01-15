@@ -23,7 +23,7 @@ public class TimerEngine: ObservableObject {
     }
     
     /// The underlying IntervalTimer configuration (persisted data).
-    public let interval: IntervalTimer
+    public let timer: IntervalTimer
     
     /// Current round (1-based). If totalRounds == 0 => indefinite.
     @Published public private(set) var currentRound: Int = 0
@@ -42,8 +42,9 @@ public class TimerEngine: ObservableObject {
     
     // MARK: - Initialization
     
-    public init(interval: IntervalTimer) {
-        self.interval = interval
+    public init(timer: IntervalTimer) {
+        self.timer = timer
+        self.remainingSeconds = timer.activeDuration
     }
     
     // MARK: - Engine Controls
@@ -56,7 +57,7 @@ public class TimerEngine: ObservableObject {
         if phase == .idle {
             currentRound = 1
             phase = .active
-            remainingSeconds = interval.activeDuration
+            remainingSeconds = timer.activeDuration
         }
         
         isRunning = true
@@ -72,8 +73,8 @@ public class TimerEngine: ObservableObject {
     /// Resets the entire timer to the idle phase.
     public func reset() {
         pause()
-        currentRound = 0
-        remainingSeconds = 0
+        currentRound = 1
+        remainingSeconds = timer.activeDuration
         phase = .idle
     }
     
@@ -100,9 +101,9 @@ public class TimerEngine: ObservableObject {
             switch phase {
             case .active:
                 // Completed an active phase
-                if interval.restDuration > 0 {
+                if timer.restDuration > 0 {
                     phase = .rest
-                    remainingSeconds = interval.restDuration
+                    remainingSeconds = timer.restDuration
                 } else {
                     self.handleRoundCompletion()
                 }
@@ -123,22 +124,22 @@ public class TimerEngine: ObservableObject {
     /// Called when finishing either an active or rest phase.
     private func handleRoundCompletion() {
         // If indefinite or have more rounds left
-        if interval.totalRounds == 0 || currentRound < interval.totalRounds {
+        if timer.totalRounds == 0 || currentRound < timer.totalRounds {
             // Move to next round
             if phase == .rest {
                 currentRound += 1
                 phase = .active
-                remainingSeconds = interval.activeDuration
+                remainingSeconds = timer.activeDuration
             } else {
                 // If we directly come here from active with no rest
                 currentRound += 1
-                if interval.restDuration > 0 {
+                if timer.restDuration > 0 {
                     phase = .rest
-                    remainingSeconds = interval.restDuration
+                    remainingSeconds = timer.restDuration
                 } else {
                     // Edge case: no rest
                     phase = .active
-                    remainingSeconds = interval.activeDuration
+                    remainingSeconds = timer.activeDuration
                 }
             }
         } else {

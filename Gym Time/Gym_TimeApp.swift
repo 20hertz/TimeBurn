@@ -8,22 +8,21 @@
 import SwiftUI
 
 @main
-struct GymTimeApp: App {
-    @StateObject private var timerModel = TimerModel()
+struct TimerApp_iOS: App {
 
-    init() {
-        _ = WatchConnector.shared // Activate and retain shared instance
-    }
-    
+    @StateObject private var timerManager = TimerManager.shared
+    @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
+
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .environmentObject(timerModel)
+            NavigationStack {
+                HomeView()
+            }
+            .environmentObject(timerManager)
+            .environmentObject(connectivityProvider)
+            .onAppear {
+                connectivityProvider.startSession()
+            }
         }
     }
-}
-
-#Preview {
-    HomeView()
-        .environmentObject(TimerModel())
 }

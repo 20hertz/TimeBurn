@@ -17,12 +17,12 @@ public class ActiveTimerEngines {
     private init() {}
     
     /// Returns an existing engine for the given timer config, or creates one if none exist.
-    public func engine(for interval: IntervalTimer) -> TimerEngine {
-        if let existing = engines[interval.id] {
+    public func engine(for timer: IntervalTimer) -> TimerEngine {
+        if let existing = engines[timer.id] {
             return existing
         } else {
-            let newEngine = TimerEngine(interval: interval)
-            engines[interval.id] = newEngine
+            let newEngine = TimerEngine(timer: timer)
+            engines[timer.id] = newEngine
             return newEngine
         }
     }

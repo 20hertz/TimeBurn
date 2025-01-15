@@ -7,38 +7,76 @@
 
 import SwiftUI
 
-struct TimerView: View {
-    let timer: Timer
+struct WatchTimerView: View {
+    @ObservedObject var engine: TimerEngine
+    @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
 
     var body: some View {
-        VStack {
-            Text("\(timer.remainingTime / 60):\(String(format: "%02d", timer.remainingTime % 60))")
-                .font(.system(size: 48, weight: .bold, design: .monospaced))
-                .padding()
-
-            Text("Round \(timer.currentRound) of \(timer.rounds)")
-                .font(.subheadline)
-                .padding(.bottom)
-
-            Button(action: {}) {
-                Image(systemName: "play.fill")
-                    .resizable()
-                    .frame(width: 30, height: 30)
+        VStack(spacing: 12) {
+            // Countdown display
+            Text(timeString(from: engine.remainingSeconds))
+                .font(.system(.title, design: .monospaced))
+                .padding(.top, 20)
+            
+            // Round indicator
+            Text(roundIndicator)
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            // Controls: Reset (if started) and Play/Pause
+            HStack(spacing: 20) {
+                if engine.phase != .idle {
+                    Button {
+                        engine.reset()
+                        sendAction(.reset)
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                }
+                
+                Button {
+                    if engine.isRunning {
+                        engine.pause()
+                        sendAction(.pause)
+                    } else {
+                        engine.play()
+                        sendAction(.play)
+                    }
+                } label: {
+                    Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.largeTitle)
+                }
             }
+            .padding(.bottom, 20)
         }
-        .navigationTitle(timer.name)
+        .padding()
+    }
+    
+    private var roundIndicator: String {
+        let total = engine.timer.totalRounds
+        if total == 0 {
+            return "Round \(engine.currentRound) / ∞"
+        } else {
+            return "Round \(engine.currentRound) / \(total)"
+        }
+    }
+    
+    private func timeString(from seconds: Int) -> String {
+        let minutes = seconds / 60
+        let seconds = seconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    // Stubbed connectivity calls.
+    private func sendAction(_ action: TimerAction) {
+        connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
 }
 
 #Preview {
-    TimerView(
-        timer: Timer(
-            id: UUID(),
-            name: "Sample Timer",
-            activeDuration: 30,
-            restDuration: 10,
-            rounds: 5,
-            remainingTime: 25
-        )
-    )
+    let sampleTimer = IntervalTimer(name: "Watch Timer", activeDuration: 45, restDuration: 15, totalRounds: 4)
+    let engine = TimerEngine(timer: sampleTimer)
+    return WatchTimerView(engine: engine)
 }
