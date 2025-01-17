@@ -14,18 +14,8 @@ struct TimerView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            // Countdown display
-            Text(timeString(from: engine.remainingTime))
-                .font(.system(size: 60, design: .monospaced))
-                .padding(.top, 40)
-            
-            if engine.timer.totalRounds != 0 {
-                Text(roundIndicator)
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
+            timerDisplay()
+            roundIndicator()
         }
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -80,27 +70,52 @@ struct TimerView: View {
         }
     }
     
-    private var roundIndicator: String {
-        let total = engine.timer.totalRounds
-        // If totalRounds == 0, we treat it as indefinite.
-        if total == 0 {
-            return "Round: \(engine.currentRound) / ∞"
-        } else {
-            return "Round: \(engine.currentRound) / \(total)"
+    private func timerDisplay() -> some View {
+        VStack(spacing: 16) {
+            Text("REST")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.black)
+                .opacity(engine.phase == .rest ? 1.0 : 0.0)
+                .padding(.bottom, 8)
+            CircularProgressBar(
+                progress: progress,
+                remainingTime: engine.remainingTime
+            )
+                .frame(width: 250, height: 250)
+                .padding(.top, 40)
         }
     }
     
-    private func timeString(from seconds: Int) -> String {
-        let minutes = seconds / 60
-        let seconds = seconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+    @ViewBuilder
+    private func roundIndicator() -> some View {
+        if engine.timer.totalRounds > 1 {
+            HStack(spacing: 8) {
+                ForEach(0..<engine.timer.totalRounds, id: \.self) { index in
+                    Circle()
+                        .fill(index < engine.currentRound ? Color.green : Color.gray.opacity(0.5))
+                        .frame(width: 20, height: 20)
+                }
+            }
+        }
     }
+    
 
     private func format(seconds: Int) -> String {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
+    
+    private var progress: CGFloat {
+        let totalDuration: CGFloat
+        if engine.phase == .rest {
+            totalDuration = CGFloat(engine.timer.restDuration)
+        } else {
+            totalDuration = CGFloat(engine.timer.activeDuration)
+        }
+        return min(CGFloat(engine.remainingTime) / totalDuration, 1)
+    }
+    
     
     private func sendAction(_ action: TimerAction) {
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)

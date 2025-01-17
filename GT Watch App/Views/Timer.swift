@@ -14,14 +14,15 @@ struct WatchTimerView: View {
     var body: some View {
         VStack(spacing: 12) {
             // Countdown display
-            Text(timeString(from: engine.remainingTime))
+            Text(formatTime(from: engine.remainingTime))
                 .font(.system(.title, design: .monospaced))
                 .padding(.top, 20)
             
-            // Round indicator
-            Text(roundIndicator)
-                .font(.headline)
-                .foregroundColor(.secondary)
+            if engine.timer.totalRounds > 1 {
+                Text(roundIndicator)
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+            }
             
             Spacer()
             
@@ -51,6 +52,7 @@ struct WatchTimerView: View {
             }
             .padding(.bottom, 20)
         }
+        .background(backgroundColor)
     }
     
     private var roundIndicator: String {
@@ -62,12 +64,17 @@ struct WatchTimerView: View {
         }
     }
     
-    private func timeString(from seconds: Int) -> String {
-        let minutes = seconds / 60
-        let seconds = seconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+    private var backgroundColor: Color {
+        switch engine.phase {
+        case .active:
+            return .green
+        case .rest:
+            return .red
+        default:
+            return .clear
+        }
     }
-
+    
     private func sendAction(_ action: TimerAction) {
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
