@@ -15,7 +15,7 @@ struct TimerView: View {
     var body: some View {
         VStack(spacing: 20) {
             // Countdown display
-            Text(timeString(from: engine.remainingSeconds))
+            Text(timeString(from: engine.remainingTime))
                 .font(.system(size: 60, design: .monospaced))
                 .padding(.top, 40)
             
@@ -44,14 +44,14 @@ struct TimerView: View {
                     .font(.headline)
             }
             // Right: Edit button (cog icon) which navigates to an Edit view (not implemented here).
-//                ToolbarItem(placement: .navigationBarTrailing) {
-//                    NavigationLink {
-//                        TimerEditView(engine: engine)
-//                    } label: {
-//                        Image(systemName: "gear")
-//                            .foregroundColor(.blue)
-//                    }
-//                }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    EditView(timer: engine.timer)
+                } label: {
+                    Image(systemName: "gear")
+                        .foregroundColor(.blue)
+                }
+            }
             // Bottom Toolbar with Reset and Primary Action buttons.
             ToolbarItemGroup(placement: .bottomBar) {
                 if engine.phase != .idle {

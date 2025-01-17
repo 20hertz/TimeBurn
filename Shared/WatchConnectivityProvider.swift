@@ -51,17 +51,21 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     // MARK: - Send/Receive User Actions
     
     /// Sends a user action (play/pause/reset) for a specific IntervalTimer to the counterpart.
-    public func sendAction(
-        timerID: UUID,
-        action: TimerAction
-    ) {
+    public func sendAction(timerID: UUID, action: TimerAction) {
         guard let session = session else { return }
+        
+        // Here we assume that TimerManager.shared or the currently active engine
+        // has the snapshot we want to send. Adjust as needed if you have a different source.
+        let engine = ActiveTimerEngines.shared.engine(for: TimerManager.shared.timers.first { $0.id == timerID }!)
         
         let payload: [String: Any] = [
             "actionEvent": true,
             "timerID": timerID.uuidString,
             "action": action.rawValue,
-            "timestamp": Date().timeIntervalSince1970  // Double
+            "timestamp": Date().timeIntervalSince1970,   // Absolute timestamp.
+            "remainingTime": engine.remainingTime,         // Sender's current remainingTime.
+            "isRestPeriod": (engine.phase == .rest),         // Sender's phase.
+            "currentRound": engine.currentRound             // Sender's current round.
         ]
         
         #if os(iOS)
@@ -72,6 +76,31 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         guard session.isReachable else { return }
         session.sendMessage(payload, replyHandler: nil, errorHandler: nil)
         #endif
+    }
+    
+    private func handleActionEvent(_ message: [String : Any]) {
+        guard
+            let rawAction = message["action"] as? String,
+            let action = TimerAction(rawValue: rawAction),
+            let timerIDString = message["timerID"] as? String,
+            let eventTimestamp = message["timestamp"] as? TimeInterval,
+            let remainingTimePayload = message["remainingTime"] as? Int,
+            let isRestPayload = message["isRestPeriod"] as? Bool,
+            let currentRoundPayload = message["currentRound"] as? Int
+        else { return }
+        
+        let timestampDate = Date(timeIntervalSince1970: eventTimestamp)
+        
+        DispatchQueue.main.async {
+            if let found = TimerManager.shared.timers.first(where: { $0.id.uuidString == timerIDString }) {
+                let engine = ActiveTimerEngines.shared.engine(for: found)
+                engine.applyAction(action,
+                                   eventTimestamp: timestampDate,
+                                   payloadRemainingTime: remainingTimePayload,
+                                   payloadIsRest: isRestPayload,
+                                   payloadCurrentRound: currentRoundPayload)
+            }
+        }
     }
     
     // MARK: - WCSessionDelegate
@@ -91,35 +120,6 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         // 2) Incoming action event
         if let isActionEvent = message["actionEvent"] as? Bool, isActionEvent {
             handleActionEvent(message)
-        }
-    }
-    
-    private func handleActionEvent(_ message: [String : Any]) {
-        guard
-            let rawAction = message["action"] as? String,
-            let action = TimerAction(rawValue: rawAction),
-            let timerIDString = message["timerID"] as? String,
-            let eventTimestamp = message["timestamp"] as? TimeInterval
-        else {
-            return
-        }
-        
-        let timestampDate = Date(timeIntervalSince1970: eventTimestamp)
-        
-        // Now we can find or create a local TimerEngine for that timerID.
-        // For simplicity, we might have a global map [UUID: TimerEngine].
-        // Here, we show a conceptual approach:
-        
-        DispatchQueue.main.async {
-            // Locate the IntervalTimer in TimerManager
-            if let found = TimerManager.shared.timers.first(where: { $0.id.uuidString == timerIDString }) {
-                
-                // You might store active engines in a dictionary:
-                let engine = ActiveTimerEngines.shared.engine(for: found)
-                
-                // Apply the action
-                engine.applyAction(action, eventTimestamp: timestampDate)
-            }
         }
     }
     

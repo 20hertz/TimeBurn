@@ -7,174 +7,249 @@
 
 import Foundation
 import Combine
-/// Manages the runtime state of a single `IntervalTimer` (e.g., countdown, round transitions),
-/// including a local 1-second ticker. Does *not* persist ephemeral state.
-///
-/// Only one TimerEngine should run at a time, but you can create multiple
-/// to handle different timers sequentially.
+
+/// Manages the ephemeral countdown state for an IntervalTimer configuration,
+/// handling active/rest transitions, rounds, and synchronization.
 public class TimerEngine: ObservableObject {
     
-    /// Represents the current phase of the interval timer.
     public enum Phase {
-        case idle  // Timer not started or is reset
-        case active
-        case rest
-        case completed  // All rounds finished
+        case idle      // Timer not started or reset.
+        case active    // Counting down the active period.
+        case rest      // Counting down the rest period.
+        case completed // All rounds finished.
     }
     
-    /// The underlying IntervalTimer configuration (persisted data).
-    public let timer: IntervalTimer
+    // MARK: - Published Properties
     
-    /// Current round (1-based). If totalRounds == 0 => indefinite.
-    @Published public private(set) var currentRound: Int = 0
+    /// The underlying configuration.
+    @Published public var timer: IntervalTimer
     
-    /// Remaining seconds in the current phase.
-    @Published public private(set) var remainingSeconds: Int = 0
+    /// The remaining time in the current period (active or rest).
+    @Published public var remainingTime: Int
     
-    /// The current phase (idle, active, rest, or completed).
-    @Published public private(set) var phase: Phase = .idle
+    /// Whether the timer is running.
+    @Published public var isRunning: Bool = false
     
-    /// Simple state to track if we're running or paused.
-    @Published public private(set) var isRunning: Bool = false
+    /// The current round (1-based).
+    @Published public var currentRound: Int = 0
     
-    /// Internal 1-second timer subscription.
-    private var timerSubscription: Cancellable?
+    /// The current phase.
+    @Published public var phase: Phase = .idle
+    
+    /// True if the timer has completed all rounds.
+    public var isCompleted: Bool { phase == .completed }
+    
+    // MARK: - Internal Properties
+    
+    /// DispatchSourceTimer for scheduling ticks.
+    private var dispatchTimer: DispatchSourceTimer?
+    
+    /// Configuration of durations.
+    private var activeDuration: Int { timer.activeDuration }
+    private var restDuration: Int { timer.restDuration }
+    private var totalRounds: Int { timer.totalRounds }
+    
+    /// The timestamp at which the current period started.
+    private var periodStartTime: Date?
+    
+    /// The total duration (in seconds) for the current period.
+    private var periodTotalDuration: Int = 0
+    
+    /// A cancellable for subscribing to TimerManager updates if desired.
+    private var timerManagerSubscription: AnyCancellable?
     
     // MARK: - Initialization
     
     public init(timer: IntervalTimer) {
         self.timer = timer
-        self.remainingSeconds = timer.activeDuration
+        self.remainingTime = timer.activeDuration
+        self.currentRound = 0
+        self.phase = .idle
+        subscribeToTimerManager() // Optional: auto-update configuration if TimerManager changes.
+    }
+    
+    // MARK: - Configuration
+    
+    /// Updates the configuration and resets the engine.
+    public func updateConfiguration(to newTimer: IntervalTimer) {
+        self.timer = newTimer
+        reset()
+    }
+    
+    /// Subscribes to TimerManager’s timers (if you'd like configuration changes to update the engine automatically).
+    private func subscribeToTimerManager() {
+        timerManagerSubscription = TimerManager.shared.$timers
+            .sink { [weak self] timers in
+                guard let self = self else { return }
+                if let updated = timers.first(where: { $0.id == self.timer.id }) {
+                    self.updateConfiguration(to: updated)
+                }
+            }
     }
     
     // MARK: - Engine Controls
     
-    /// Starts the timer from the current phase and remaining time.
-    /// If idle, initialize round=1 and load `activeDuration`.
+    /// Starts or resumes the timer.
     public func play() {
         guard phase != .completed else { return }
         
         if phase == .idle {
+            // Fresh start: begin first round of active period.
             currentRound = 1
             phase = .active
-            remainingSeconds = timer.activeDuration
+            periodTotalDuration = activeDuration
+            remainingTime = activeDuration
+            periodStartTime = Date()
+        } else if !isRunning, let _ = periodStartTime {
+            // Resuming a paused period (active or rest).
+            // Compute the time that had already elapsed before the pause
+            let elapsedOnPause = periodTotalDuration - remainingTime
+            // Adjust the period start time so that elapsed time computation remains continuous.
+            periodStartTime = Date().addingTimeInterval(-TimeInterval(elapsedOnPause))
         }
         
         isRunning = true
-        startTicking()
+        startTimer()
     }
     
-    /// Pauses the countdown.
+    /// Pauses the timer and updates the remaining time based on the absolute elapsed time.
     public func pause() {
+        guard isRunning, let start = periodStartTime else { return }
+        let elapsed = Int(Date().timeIntervalSince(start))
+        let newRemaining = periodTotalDuration - elapsed
+        remainingTime = max(newRemaining, 0)
         isRunning = false
-        timerSubscription?.cancel()
+        cancelTimer()
     }
     
-    /// Resets the entire timer to the idle phase.
+    /// Resets the timer to its initial state.
     public func reset() {
         pause()
-        currentRound = 1
-        remainingSeconds = timer.activeDuration
         phase = .idle
+        currentRound = 0
+        remainingTime = activeDuration
+        periodStartTime = nil
     }
     
-    /// Advances the engine by 1 second at a time.
-    private func startTicking() {
-        // Cancel any existing subscription
-        timerSubscription?.cancel()
-        
-        timerSubscription = Timer
-            .publish(every: 1.0, on: .main, in: .default)
-            .autoconnect()
-            .sink { [weak self] _ in
-                self?.tick()
-            }
+    // MARK: - Timer Scheduling
+    
+    /// Starts the DispatchSourceTimer to update every second.
+    private func startTimer() {
+        cancelTimer()
+        dispatchTimer = DispatchSource.makeTimerSource(queue: DispatchQueue.main)
+        dispatchTimer?.schedule(deadline: .now(), repeating: 0.2)
+        dispatchTimer?.setEventHandler { [weak self] in
+            self?.tick()
+        }
+        dispatchTimer?.resume()
     }
     
-    /// Decrements the remaining time, handles transitions between active/rest,
-    /// handles round increments, and checks for completion.
+    /// Cancels the dispatch timer if it exists.
+    private func cancelTimer() {
+        dispatchTimer?.cancel()
+        dispatchTimer = nil
+    }
+    
+    // MARK: - Tick Logic
+    
+    /// Computes elapsed time using the stored periodStartTime and updates remainingTime.
     private func tick() {
-        guard isRunning else { return }
+        guard isRunning, let start = periodStartTime else { return }
+        let elapsed = Int(Date().timeIntervalSince(start))
+        let newRemaining = periodTotalDuration - elapsed
+        remainingTime = max(newRemaining, 0)
         
-        // If no time left, transition
-        if remainingSeconds <= 0 {
-            switch phase {
-            case .active:
-                // Completed an active phase
-                if timer.restDuration > 0 {
-                    phase = .rest
-                    remainingSeconds = timer.restDuration
-                } else {
-                    self.handleRoundCompletion()
-                }
-                
-            case .rest:
-                // Completed a rest phase => next round
-                self.handleRoundCompletion()
-                
-            default:
-                break
-            }
-        } else {
-            // Decrement
-            remainingSeconds -= 1
+        if remainingTime == 0 {
+            advancePeriod()
         }
     }
     
-    /// Called when finishing either an active or rest phase.
-    private func handleRoundCompletion() {
-        // If indefinite or have more rounds left
-        if timer.totalRounds == 0 || currentRound < timer.totalRounds {
-            // Move to next round
-            if phase == .rest {
-                currentRound += 1
-                phase = .active
-                remainingSeconds = timer.activeDuration
-            } else {
-                // If we directly come here from active with no rest
-                currentRound += 1
-                if timer.restDuration > 0 {
-                    phase = .rest
-                    remainingSeconds = timer.restDuration
-                } else {
-                    // Edge case: no rest
-                    phase = .active
-                    remainingSeconds = timer.activeDuration
-                }
+    /// Handles transitions between active, rest, and completion.
+    private func advancePeriod() {
+        if phase == .active {
+            // If the active phase just finished and we're on the last round, mark as completed.
+            if totalRounds != 0 && currentRound == totalRounds {
+                phase = .completed
+                isRunning = false
+                remainingTime = 0
+                cancelTimer()
+                return
             }
+            
+            // Transition from active to rest if a rest duration is defined.
+            if restDuration > 0 {
+                phase = .rest
+                periodTotalDuration = restDuration
+                remainingTime = restDuration
+                periodStartTime = Date()
+            } else {
+                nextRound()
+            }
+        } else if phase == .rest {
+            // Transition from rest to the next active phase.
+            nextRound()
+        }
+    }
+    
+    /// Advances to the next round of active timing.
+    private func nextRound() {
+        if totalRounds == 0 || currentRound < totalRounds {
+            currentRound += 1
+            phase = .active
+            periodTotalDuration = activeDuration
+            remainingTime = activeDuration
+            periodStartTime = Date()
         } else {
-            // Completed final round
             phase = .completed
             isRunning = false
-            timerSubscription?.cancel()
+            remainingTime = 0
+            cancelTimer()
         }
     }
     
     // MARK: - Timestamp-Based Adjustments
-    
-    /// Applies an action (play/pause/reset) that happened at a given `eventTimestamp`.
-    /// Offsets local state if there's any delay.
-    public func applyAction(
-        _ action: TimerAction,
-        eventTimestamp: Date
-    ) {
-        let now = Date()
-        let offset = now.timeIntervalSince(eventTimestamp)
+
+    /// Applies an action (play, pause, reset) received via synchronization.
+    /// The payload carries the sender’s snapshot (remainingTime, isRestPeriod, currentRound)
+    /// and an absolute event timestamp.
+    /// The receiver uses these values to update its state and adjusts its periodStartTime
+    /// to account for any transmission delay.
+    public func applyAction(_ action: TimerAction,
+                            eventTimestamp: Date,
+                            payloadRemainingTime: Int,
+                            payloadIsRest: Bool,
+                            payloadCurrentRound: Int) {
+        // Override the local state with the sender’s snapshot.
+        remainingTime = payloadRemainingTime
+        currentRound = payloadCurrentRound
+        if payloadIsRest {
+            phase = .rest
+            periodTotalDuration = timer.restDuration
+        } else {
+            phase = .active
+            periodTotalDuration = timer.activeDuration
+        }
         
+        // Compute the raw offset
+        let rawOffset = Date().timeIntervalSince(eventTimestamp)
+
+        // Adjust the offset by subtracting 1 second. Ensure it doesn't go negative.
+        let adjustedOffset = max(rawOffset - 1, 0)
+
+        // Then, calculate the elapsed time (senderElapsed) as before:
+        let senderElapsed = Double(periodTotalDuration - payloadRemainingTime)
+
+        // And combine with the adjusted offset:
+        let elapsedWhenPaused = senderElapsed + adjustedOffset
+
+        // Finally, update periodStartTime accordingly:
+        periodStartTime = Date().addingTimeInterval(-elapsedWhenPaused)
+        
+        // Perform the requested action.
         switch action {
         case .play:
-            // Possibly reduce remainingSeconds by the offset (i.e., if the other device has been running).
-            if phase == .active || phase == .rest {
-                let offsetInt = Int(offset)
-                remainingSeconds = max(0, remainingSeconds - offsetInt)
-            }
             play()
         case .pause:
-            // If we were running for offset seconds after the event
-            if isRunning {
-                let offsetInt = Int(offset)
-                remainingSeconds = max(0, remainingSeconds - offsetInt)
-            }
             pause()
         case .reset:
             reset()
