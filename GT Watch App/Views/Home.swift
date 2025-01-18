@@ -13,24 +13,11 @@ struct WatchHomeView: View {
     var body: some View {
         List {
             ForEach(timerManager.timers) { timer in
-                NavigationLink(destination: WatchTimerView(engine: ActiveTimerEngines.shared.engine(for: timer))) {
-                    VStack(alignment: .leading) {
-                        Text(timer.name)
-                            .font(.headline)
-                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(format(seconds: timer.activeDuration)) | \(format(seconds: timer.restDuration))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                // Retrieve the engine and pass it into the row view.
+                let engine = ActiveTimerEngines.shared.engine(for: timer)
+                RowView(timer: timer, engine: engine)
             }
         }
-        .navigationTitle("Timers")
-    }
-
-    private func format(seconds: Int) -> String {
-        let minutes = seconds / 60
-        let secondsPart = seconds % 60
-        return String(format: "%d:%02d", minutes, secondsPart)
     }
 }
 
@@ -40,6 +27,7 @@ struct WatchHomeView: View {
         IntervalTimer(name: "Circuit", activeDuration: 45, restDuration: 15, totalRounds: 6),
         IntervalTimer(name: "Sprint", activeDuration: 30, restDuration: 30, totalRounds: 5)
     ])
+    
     return NavigationView {
         WatchHomeView()
             .environmentObject(previewManager)

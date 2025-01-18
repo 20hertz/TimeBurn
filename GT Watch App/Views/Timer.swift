@@ -13,7 +13,7 @@ struct WatchTimerView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Countdown display
+
             Text(formatTime(from: engine.remainingTime))
                 .font(.system(.title, design: .monospaced))
                 .padding(.top, 20)

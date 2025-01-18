@@ -52,50 +52,35 @@ struct TimerView: View {
                     // Left-aligned reset button.
                     HStack {
                         if engine.phase != .idle {
-                            Button {
-                                engine.reset()
-                                sendAction(.reset)
-                            } label: {
-                                Image(systemName: "arrow.counterclockwise")
-                            }
+                            resetButton()
                         }
                         Spacer()
                     }
-                    // Centered play/pause button.
-                    Button {
-                        if engine.isRunning {
-                            engine.pause()
-                            sendAction(.pause)
-                        } else {
-                            engine.play()
-                            sendAction(.play)
-                        }
-                    } label: {
-                        Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 40))
-                    }
+                    playPauseButton()
                 }
             }
         }
     }
     
     // MARK: - Timer Display
-   private func timerDisplay() -> some View {
-       VStack(spacing: 16) {
-           if engine.phase == .rest {
-               Text("REST")
-                   .font(.system(size: 30, weight: .bold))
-                   .foregroundColor(.black)
-           }
-           CircularProgressBar(
-               progress: Double(progress),
-               remainingTime: engine.remainingTime
-           )
-           .frame(width: 250, height: 250)
-       }
-       // Remove extra top padding so that the inner VStack stays compact.
-       .padding(.vertical, 0)
-   }
+    private func timerDisplay() -> some View {
+        VStack(spacing: 16) {
+            // Always render the "REST" label with fixed height,
+            // but only make it visible when in rest phase.
+            Text("REST")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.black)
+                .opacity(engine.phase == .rest ? 1.0 : 0.0)
+                .frame(height: 30)  // Reserve the same space always.
+            
+            CircularProgressBar(
+                progress: Double(progress),
+                remainingTime: engine.remainingTime
+            )
+            .frame(width: 250, height: 250)
+        }
+        .padding(.vertical, 0)
+    }
     
     // MARK: - Round Indicator
     @ViewBuilder
@@ -120,6 +105,31 @@ struct TimerView: View {
             totalDuration = CGFloat(engine.timer.activeDuration)
         }
         return min(CGFloat(engine.remainingTime) / totalDuration, 1)
+    }
+    
+    // MARK: - Buttons
+    private func playPauseButton() -> some View {
+        Button {
+            if engine.isRunning {
+                engine.pause()
+                sendAction(.pause)
+            } else {
+                engine.play()
+                sendAction(.play)
+            }
+        } label: {
+            Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                .font(.system(size: 40))
+        }
+    }
+    
+    private func resetButton() -> some View {
+        Button {
+            engine.reset()
+            sendAction(.reset)
+        } label: {
+            Image(systemName: "arrow.counterclockwise")
+        }
     }
     
     
