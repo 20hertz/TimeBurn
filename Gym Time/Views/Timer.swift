@@ -13,9 +13,14 @@ struct TimerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 20) {
-            timerDisplay()
-            roundIndicator()
+        VStack {
+            Spacer()
+            // Group timerDisplay and roundIndicator together.
+            VStack(spacing: 16) {
+                timerDisplay()
+                roundIndicator()
+            }
+            Spacer()
         }
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -38,54 +43,61 @@ struct TimerView: View {
                 NavigationLink {
                     EditView(timer: engine.timer)
                 } label: {
-                    Image(systemName: "gear")
+                    Image(systemName: "gearshape")
                         .foregroundColor(.blue)
                 }
             }
-            // Bottom Toolbar with Reset and Primary Action buttons.
-            ToolbarItemGroup(placement: .bottomBar) {
-                if engine.phase != .idle {
+            ToolbarItem(placement: .bottomBar) {
+                ZStack {
+                    // Left-aligned reset button.
+                    HStack {
+                        if engine.phase != .idle {
+                            Button {
+                                engine.reset()
+                                sendAction(.reset)
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                            }
+                        }
+                        Spacer()
+                    }
+                    // Centered play/pause button.
                     Button {
-                        engine.reset()
-                        sendAction(.reset)
+                        if engine.isRunning {
+                            engine.pause()
+                            sendAction(.pause)
+                        } else {
+                            engine.play()
+                            sendAction(.play)
+                        }
                     } label: {
-                        Image(systemName: "arrow.counterclockwise")
+                        Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 40))
                     }
                 }
-                Spacer()
-                Button {
-                    if engine.isRunning {
-                        engine.pause()
-                        sendAction(.pause)
-                    } else {
-                        engine.play()
-                        sendAction(.play)
-                    }
-                } label: {
-                    Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 40))
-                }
-                Spacer()
             }
         }
     }
     
-    private func timerDisplay() -> some View {
-        VStack(spacing: 16) {
-            Text("REST")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.black)
-                .opacity(engine.phase == .rest ? 1.0 : 0.0)
-                .padding(.bottom, 8)
-            CircularProgressBar(
-                progress: progress,
-                remainingTime: engine.remainingTime
-            )
-                .frame(width: 250, height: 250)
-                .padding(.top, 40)
-        }
-    }
+    // MARK: - Timer Display
+   private func timerDisplay() -> some View {
+       VStack(spacing: 16) {
+           if engine.phase == .rest {
+               Text("REST")
+                   .font(.system(size: 30, weight: .bold))
+                   .foregroundColor(.black)
+           }
+           CircularProgressBar(
+               progress: Double(progress),
+               remainingTime: engine.remainingTime
+           )
+           .frame(width: 250, height: 250)
+       }
+       // Remove extra top padding so that the inner VStack stays compact.
+       .padding(.vertical, 0)
+   }
     
+    // MARK: - Round Indicator
     @ViewBuilder
     private func roundIndicator() -> some View {
         if engine.timer.totalRounds > 1 {
@@ -99,13 +111,7 @@ struct TimerView: View {
         }
     }
     
-
-    private func format(seconds: Int) -> String {
-        let minutes = seconds / 60
-        let remainingSeconds = seconds % 60
-        return String(format: "%d:%02d", minutes, remainingSeconds)
-    }
-    
+    // MARK: - Helpers
     private var progress: CGFloat {
         let totalDuration: CGFloat
         if engine.phase == .rest {

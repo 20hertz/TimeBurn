@@ -24,7 +24,7 @@ struct CircularProgressBar: View {
                 .trim(from: 0.0, to: progress)
                 .stroke(
                     AngularGradient(
-                        gradient: Gradient(colors: [.green, .yellow, .red]),
+                        gradient: Gradient(colors: [.red, .green]),
                         center: .center
                     ),
                     style: StrokeStyle(lineWidth: 10, lineCap: .round)

@@ -18,11 +18,8 @@ struct WatchTimerView: View {
                 .font(.system(.title, design: .monospaced))
                 .padding(.top, 20)
             
-            if engine.timer.totalRounds > 1 {
-                Text(roundIndicator)
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
+            roundIndicators()
+                .padding(.top, 8)
             
             Spacer()
             
@@ -55,12 +52,17 @@ struct WatchTimerView: View {
         .background(backgroundColor)
     }
     
-    private var roundIndicator: String {
-        let total = engine.timer.totalRounds
-        if total == 0 {
-            return "Round \(engine.currentRound) / ∞"
-        } else {
-            return "Round \(engine.currentRound) / \(total)"
+    @ViewBuilder
+    private func roundIndicators() -> some View {
+        if engine.timer.totalRounds > 1 {
+            HStack(spacing: 6) {
+                ForEach(0..<engine.timer.totalRounds, id: \.self) { index in
+                    Circle()
+                        .stroke(Color.white, lineWidth: 1)
+                        .background(Circle().fill(index < engine.currentRound ? Color.white : Color.clear))
+                        .frame(width: 10, height: 10)
+                }
+            }
         }
     }
     
