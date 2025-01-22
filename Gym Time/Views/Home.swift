@@ -4,7 +4,6 @@
 //
 //  Created by Stéphane on 2025-01-07.
 //
-
 import SwiftUI
 
 struct HomeView: View {
@@ -12,15 +11,28 @@ struct HomeView: View {
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
     
     var body: some View {
-        List {
-            ForEach(timerManager.timers) { timer in
-                // Obtain the engine instance for this timer.
-                let engine = ActiveTimerEngines.shared.engine(for: timer)
-                RowView(timer: timer, engine: engine)
+        Group {
+            if timerManager.timers.isEmpty {
+                VStack(spacing: 12) {
+                    Text("The timers you create will appear here.")
+                        .font(.headline)
+                    Text("Hit the '+' sign up top to create one.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(timerManager.timers) { timer in
+                        // Obtain the engine instance for this timer.
+                        let engine = ActiveTimerEngines.shared.engine(for: timer)
+                        RowView(timer: timer, engine: engine)
+                    }
+                    .onDelete(perform: deleteTimers)
+                }
+                .navigationTitle("My Timers")
             }
-            .onDelete(perform: deleteTimers)
         }
-        .navigationTitle("Timers")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
@@ -67,21 +79,25 @@ struct RowView: View {
             .padding(.vertical, 4)
         }
     }
+    
+    private func formatTime(from seconds: Int) -> String {
+        let minutes = seconds / 60
+        let secondsPart = seconds % 60
+        return String(format: "%d:%02d", minutes, secondsPart)
+    }
 }
-
 
 #Preview {
     let sampleTimer = IntervalTimer(name: "HIIT", activeDuration: 60, restDuration: 30, totalRounds: 5)
     
     let previewManager = TimerManager.shared
-    
+    // Test with an empty list (comment out setTimers below to test empty state)
     previewManager.setTimers([
         sampleTimer,
         IntervalTimer(name: "Tabata", activeDuration: 20, restDuration: 10, totalRounds: 8)
     ])
     
     let engine = TimerEngine(timer: sampleTimer)
-    // For testing, simulate a running state for this timer:
     engine.isRunning = true
     
     return NavigationStack {
