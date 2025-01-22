@@ -21,6 +21,34 @@ struct WatchHomeView: View {
     }
 }
 
+struct RowView: View {
+    let timer: IntervalTimer
+    @ObservedObject var engine: TimerEngine
+
+    var body: some View {
+        NavigationLink(destination: WatchTimerView(engine: engine)) {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text(timer.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                if engine.isRunning {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
 #Preview {
     let previewManager = TimerManager.shared
     previewManager.setTimers([

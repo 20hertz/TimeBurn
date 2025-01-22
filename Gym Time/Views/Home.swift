@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var timerManager: TimerManager
+    @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
     
     var body: some View {
         List {
@@ -17,10 +18,57 @@ struct HomeView: View {
                 let engine = ActiveTimerEngines.shared.engine(for: timer)
                 RowView(timer: timer, engine: engine)
             }
+            .onDelete(perform: deleteTimers)
         }
         .navigationTitle("Timers")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    CreateView()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+    }
+    
+    private func deleteTimers(at offsets: IndexSet) {
+        offsets.forEach { index in
+            let timer = timerManager.timers[index]
+            timerManager.deleteTimer(timer)
+        }
+        connectivityProvider.sendTimers(timerManager.timers)
     }
 }
+
+struct RowView: View {
+    let timer: IntervalTimer
+    @ObservedObject var engine: TimerEngine
+    
+    var body: some View {
+        NavigationLink(destination: TimerView(engine: engine)) {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text(timer.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                if engine.isRunning {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
 
 #Preview {
     let sampleTimer = IntervalTimer(name: "HIIT", activeDuration: 60, restDuration: 30, totalRounds: 5)

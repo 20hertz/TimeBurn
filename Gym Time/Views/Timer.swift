@@ -16,10 +16,28 @@ struct TimerView: View {
         VStack {
             Spacer()
             // Group timerDisplay and roundIndicator together.
-            VStack(spacing: 16) {
-                timerDisplay()
+            VStack(spacing: 20) {
+                Text("REST")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.black)
+                    .opacity(engine.phase == .rest ? 1.0 : 0.0)
+                    .frame(height: 30)  // Reserve the same space always.
+                GeometryReader { geometry in
+                    // Use 90% of the screen width for the progress circle.
+                    CircularProgressBar(
+                        progress: Double(progress),
+                        remainingTime: engine.remainingTime,
+                        isResting: engine.phase == .rest
+                    )
+                    .frame(width: geometry.size.width * 0.75,
+                           height: geometry.size.width * 0.75)
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                }
+                .frame(height: UIScreen.main.bounds.width * 0.75, alignment: .center)
+//                .frame(width: 250, height: 250, alignment: .center)
                 roundIndicator()
             }
+            
             Spacer()
         }
         .navigationBarBackButtonHidden(true)
@@ -62,25 +80,7 @@ struct TimerView: View {
         }
     }
     
-    // MARK: - Timer Display
-    private func timerDisplay() -> some View {
-        VStack(spacing: 16) {
-            // Always render the "REST" label with fixed height,
-            // but only make it visible when in rest phase.
-            Text("REST")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.black)
-                .opacity(engine.phase == .rest ? 1.0 : 0.0)
-                .frame(height: 30)  // Reserve the same space always.
-            
-            CircularProgressBar(
-                progress: Double(progress),
-                remainingTime: engine.remainingTime
-            )
-            .frame(width: 250, height: 250)
-        }
-        .padding(.vertical, 0)
-    }
+
     
     // MARK: - Round Indicator
     @ViewBuilder
