@@ -17,7 +17,7 @@ struct CircularProgressBar: View {
         if isResting {
             return .red
         } else {
-            return remainingTime <= 5 ? .yellow : .green
+            return remainingTime <= 5 ? .yellow : Color.accentColor
         }
     }
     
@@ -44,9 +44,4 @@ struct CircularProgressBar: View {
                 .font(.system(size: 40, design: .monospaced))
         }
     }
-}
-
-#Preview(traits: .sizeThatFitsLayout) {
-    // Preview as Active (remainingTime > 5 → green, ≤ 5 → yellow)
-    CircularProgressBar(progress: 0.6, remainingTime: 36, isResting: false)
 }

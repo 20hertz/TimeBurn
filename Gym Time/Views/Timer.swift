@@ -13,75 +13,74 @@ struct TimerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack {
-            Spacer()
-            // Group timerDisplay and roundIndicator together.
-            VStack(spacing: 20) {
-                Text("REST")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.black)
-                    .opacity(engine.phase == .rest ? 1.0 : 0.0)
-                    .frame(height: 30)  // Reserve the same space always.
-                GeometryReader { geometry in
-                    // Use 90% of the screen width for the progress circle.
-                    CircularProgressBar(
-                        progress: Double(progress),
-                        remainingTime: engine.remainingTime,
-                        isResting: engine.phase == .rest
-                    )
-                    .frame(width: geometry.size.width * 0.75,
-                           height: geometry.size.width * 0.75)
-                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                }
-                .frame(height: UIScreen.main.bounds.width * 0.75, alignment: .center)
-//                .frame(width: 250, height: 250, alignment: .center)
-                roundIndicator()
+        VStack(spacing: 20) {
+
+            Text("REST")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.black)
+                .opacity(engine.phase == .rest ? 1.0 : 0.0)
+                .frame(height: 30) // Reserve space to prevent layout shifts
+
+            GeometryReader { geometry in
+                CircularProgressBar(
+                    progress: Double(progress),
+                    remainingTime: engine.remainingTime,
+                    isResting: engine.phase == .rest
+                )
+                .frame(width: geometry.size.width * 0.75,
+                       height: geometry.size.width * 0.75)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
-            
+            .frame(height: UIScreen.main.bounds.width * 0.75) // Fixed height based on screen width
+
+            roundIndicator()
+
+            HStack {
+                if engine.phase != .idle {
+                    resetButton()
+                        .frame(width: 60, height: 60) // Increased size
+                        .overlay(
+                            Circle()
+                                .stroke(Color.accentColor, lineWidth: 2) // Solid border
+                        )
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                playPauseButton()
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
+
             Spacer()
         }
+        .padding()
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            // Left: Back button (chevron)
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.blue)
                 }
             }
-            // Center: Timer name
+
             ToolbarItem(placement: .principal) {
                 Text(engine.timer.name)
                     .font(.headline)
             }
-            // Right: Edit button (cog icon) which navigates to an Edit view (not implemented here).
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
                     EditView(timer: engine.timer)
                 } label: {
                     Image(systemName: "gearshape")
-                        .foregroundColor(.blue)
-                }
-            }
-            ToolbarItem(placement: .bottomBar) {
-                ZStack {
-                    // Left-aligned reset button.
-                    HStack {
-                        if engine.phase != .idle {
-                            resetButton()
-                        }
-                        Spacer()
-                    }
-                    playPauseButton()
                 }
             }
         }
     }
-    
 
-    
     // MARK: - Round Indicator
     @ViewBuilder
     private func roundIndicator() -> some View {
@@ -89,13 +88,13 @@ struct TimerView: View {
             HStack(spacing: 8) {
                 ForEach(0..<engine.timer.totalRounds, id: \.self) { index in
                     Circle()
-                        .fill(index < engine.currentRound ? Color.green : Color.gray.opacity(0.5))
+                        .fill(index < engine.currentRound ? Color.accentColor : Color.gray.opacity(0.5))
                         .frame(width: 20, height: 20)
                 }
             }
         }
     }
-    
+
     // MARK: - Helpers
     private var progress: CGFloat {
         let totalDuration: CGFloat
@@ -106,7 +105,7 @@ struct TimerView: View {
         }
         return min(CGFloat(engine.remainingTime) / totalDuration, 1)
     }
-    
+
     // MARK: - Buttons
     private func playPauseButton() -> some View {
         Button {
@@ -119,20 +118,33 @@ struct TimerView: View {
             }
         } label: {
             Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                .font(.system(size: 40))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .padding(20)
+                .foregroundColor(.white)
         }
+        .frame(width: 80, height: 80) // Increased size
+        .background(Color.accentColor) // Solid accent color background
+        .clipShape(Circle())
+        .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
+        .accessibilityHint(engine.isRunning ? "Pauses the current timer." : "Starts the timer.")
     }
-    
+
     private func resetButton() -> some View {
         Button {
             engine.reset()
             sendAction(.reset)
         } label: {
             Image(systemName: "arrow.counterclockwise")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .padding(15)
         }
+        .accessibilityLabel("Reset Timer")
+        .accessibilityHint("Resets the current timer to its initial state.")
+        .accessibilityHidden(engine.phase == .idle)
     }
-    
-    
+
     private func sendAction(_ action: TimerAction) {
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
@@ -143,5 +155,6 @@ struct TimerView: View {
     let engine = TimerEngine(timer: sampleTimer)
     return NavigationView {
         TimerView(engine: engine)
+            .environmentObject(WatchConnectivityProvider.shared)
     }
 }

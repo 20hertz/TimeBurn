@@ -14,7 +14,7 @@ struct WatchHomeView: View {
             if timerManager.timers.isEmpty {
                 // Placeholder view when there are no timers.
                 VStack(spacing: 8) {
-                    Text("No timers created")
+                    Text("No timers created yet.")
                         .font(.headline)
                     Text("Create a new timer on your iOS device.")
                         .font(.subheadline)
