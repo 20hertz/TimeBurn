@@ -13,6 +13,8 @@ struct TimerApp_iOS: App {
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
 
+    private let audioManager = AudioManager.shared
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack {
