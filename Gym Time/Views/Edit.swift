@@ -16,52 +16,87 @@ struct EditView: View {
 
     // State properties pre-filled with existing values.
     @State private var name: String
-    @State private var activeDuration: String
-    @State private var restDuration: String
-    @State private var totalRounds: String
+    @State private var activeDuration: Int
+    @State private var restDuration: Int
+    @State private var totalRounds: Int
+
+    // Alert properties
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
 
     // Initialize the state with the timer's current values.
     init(timer: IntervalTimer) {
         self.timer = timer
         _name = State(initialValue: timer.name)
-        _activeDuration = State(initialValue: "\(timer.activeDuration)")
-        _restDuration = State(initialValue: "\(timer.restDuration)")
-        _totalRounds = State(initialValue: "\(timer.totalRounds)")
+        _activeDuration = State(initialValue: timer.activeDuration)
+        _restDuration = State(initialValue: timer.restDuration)
+        _totalRounds = State(initialValue: timer.totalRounds)
     }
 
     var body: some View {
         Form {
-            Section(header: Text("Edit Timer Details")) {
+            // Section for Timer Name
+            Section(header: Text("Timer Name")) {
                 TextField("Name", text: $name)
-                TextField("Active Duration (seconds)", text: $activeDuration)
-                    .keyboardType(.numberPad)
-                TextField("Rest Duration (seconds)", text: $restDuration)
-                    .keyboardType(.numberPad)
-                TextField("Total Rounds (0 = infinite)", text: $totalRounds)
-                    .keyboardType(.numberPad)
+                    .disableAutocorrection(true)
+            }
+
+            // Section for Durations
+            Section(header: Text("Durations")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Active Time")
+                        .font(.subheadline)
+                    DurationPicker(duration: $activeDuration)
+                        .frame(height: 150)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rest Time")
+                        .font(.subheadline)
+                    DurationPicker(duration: $restDuration)
+                        .frame(height: 150)
+                }
+            }
+
+            // Section for Rounds
+            Section(header: Text("Rounds")) {
+                Stepper("Rounds: \(totalRounds == 0 ? "∞" : "\(totalRounds)")", value: $totalRounds, in: 0...100)
             }
         }
         .navigationTitle("Edit Timer")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
+                Button("Update") {
                     saveChanges()
                 }
-                .disabled(name.isEmpty ||
-                          activeDuration.isEmpty ||
-                          restDuration.isEmpty ||
-                          totalRounds.isEmpty)
+                .disabled(name.isEmpty || activeDuration <= 0)
             }
+        }
+        .alert(isPresented: $showingAlert) {
+            Alert(title: Text("Invalid Input"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
 
     private func saveChanges() {
-        guard let active = Int(activeDuration),
-              let rest = Int(restDuration),
-              let rounds = Int(totalRounds) else { return }
-        timerManager.updateTimer(timer, name: name, activeDuration: active, restDuration: rest, totalRounds: rounds)
+        // Validate inputs
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            alertMessage = "Timer name cannot be empty."
+            showingAlert = true
+            return
+        }
+
+        guard activeDuration > 0 else {
+            alertMessage = "Active duration must be greater than zero."
+            showingAlert = true
+            return
+        }
+
+        // Update the timer in TimerManager
+        timerManager.updateTimer(timer, name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds)
         
+        // Synchronize with connected devices
         connectivityProvider.sendTimers(timerManager.timers)
+        
+        // Dismiss the view
         dismiss()
     }
 }
