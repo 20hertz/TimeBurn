@@ -42,7 +42,6 @@ class AudioManager {
     ///   - volume: The volume at which to play the sound (0.0 to 1.0). Default is 1.0.
     func playSound(soundName: String, soundExtension: String = "aac", volume: Float = 1.0) {
         guard let url = Bundle.main.url(forResource: soundName, withExtension: soundExtension) else {
-            print("Sound file '\(soundName).\(soundExtension)' not found.")
             return
         }
         
@@ -58,14 +57,20 @@ class AudioManager {
     
     /// Handles phase change to rest notifications.
     @objc private func handlePhaseChangeToRestNotification(_ notification: Notification) {
-        // Play the 3 rings bell sound when the active phase concludes
-        playSound(soundName: "Bell - 3 Rings")
+        if let timer = notification.object as? IntervalTimer {
+            if timer.enableSound {
+                playSound(soundName: "Bell - 3 Rings")
+            }
+        }
     }
     
     /// Handles phase change to active notifications.
     @objc private func handlePhaseChangeToActiveNotification(_ notification: Notification) {
-        // Play the 1 ring bell sound at the start of a new round
-        playSound(soundName: "Bell - 1 Ring")
+        if let timer = notification.object as? IntervalTimer {
+            if timer.enableSound {
+                playSound(soundName: "Bell - 1 Ring")
+            }
+        }
     }
 }
 

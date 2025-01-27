@@ -35,18 +35,22 @@ public struct IntervalTimer: Identifiable, Codable, Equatable, Hashable {
     /// Total number of rounds. If 0, runs indefinitely.
     public var totalRounds: Int
     
+    public var enableSound: Bool
+    
     /// Creates a new IntervalTimer.
     public init(
         id: UUID = UUID(),
         name: String,
         activeDuration: Int,
         restDuration: Int,
-        totalRounds: Int
+        totalRounds: Int,
+        enableSound: Bool = true
     ) {
         self.id = id
         self.name = name
         self.activeDuration = activeDuration
         self.restDuration = restDuration
         self.totalRounds = totalRounds
+        self.enableSound = enableSound
     }
 }

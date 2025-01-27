@@ -33,15 +33,17 @@ public class TimerManager: ObservableObject {
         name: String,
         activeDuration: Int,
         restDuration: Int,
-        totalRounds: Int
+        totalRounds: Int,
+        enableSound: Bool
     ) {
-        let newInterval = IntervalTimer(
+        let newTimer = IntervalTimer(
             name: name,
             activeDuration: activeDuration,
             restDuration: restDuration,
-            totalRounds: totalRounds
+            totalRounds: totalRounds,
+            enableSound: enableSound
         )
-        timers.append(newInterval)
+        timers.append(newTimer)
         saveTimers()
     }
     
@@ -55,7 +57,8 @@ public class TimerManager: ObservableObject {
         name: String? = nil,
         activeDuration: Int? = nil,
         restDuration: Int? = nil,
-        totalRounds: Int? = nil
+        totalRounds: Int? = nil,
+        enableSound: Bool? = nil
     ) {
         guard let idx = timers.firstIndex(of: interval) else { return }
         if let name = name {
@@ -69,6 +72,9 @@ public class TimerManager: ObservableObject {
         }
         if let t = totalRounds {
             timers[idx].totalRounds = t
+        }
+        if let e = enableSound {
+            timers[idx].enableSound = e
         }
         saveTimers()
     }

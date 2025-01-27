@@ -101,7 +101,7 @@ public class TimerEngine: ObservableObject {
             remainingTime = activeDuration
             periodStartTime = Date()
             #if os(iOS)
-            NotificationCenter.default.post(name: .timerPhaseChangedToActive, object: self)
+            NotificationCenter.default.post(name: .timerPhaseChangedToActive, object: timer)
             #endif
         } else if !isRunning, let _ = periodStartTime {
             // Resuming a paused period (active or rest).
@@ -186,7 +186,7 @@ public class TimerEngine: ObservableObject {
                 remainingTime = restDuration
                 periodStartTime = Date()
                 #if os(iOS)
-                NotificationCenter.default.post(name: .timerPhaseChangedToRest, object: self)
+                NotificationCenter.default.post(name: .timerPhaseChangedToRest, object: timer)
                 #endif
             } else {
                 nextRound()
@@ -206,7 +206,7 @@ public class TimerEngine: ObservableObject {
             remainingTime = activeDuration
             periodStartTime = Date()
             #if os(iOS)
-            NotificationCenter.default.post(name: .timerPhaseChangedToActive, object: self)
+            NotificationCenter.default.post(name: .timerPhaseChangedToActive, object: timer)
             #endif
         } else {
             phase = .completed

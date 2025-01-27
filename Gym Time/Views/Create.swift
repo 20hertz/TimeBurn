@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 struct CreateView: View {
     @EnvironmentObject var timerManager: TimerManager
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
@@ -17,50 +16,34 @@ struct CreateView: View {
     @State private var activeDuration: Int = 0
     @State private var restDuration: Int = 30
     @State private var totalRounds: Int = 0
+    @State private var enableSound: Bool = true
 
     var body: some View {
-        Form {
-            Section(header: Text("Timer Name")) {
-                TextField("Name", text: $name)
-                    .disableAutocorrection(true)
-            }
-
-            Section(header: Text("Durations")) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Active Time")
-                        .font(.subheadline)
-                    DurationPicker(duration: $activeDuration)
-                        .frame(height: 150)
+        NavigationView {
+            TimerForm(name: $name,
+                         activeDuration: $activeDuration,
+                         restDuration: $restDuration,
+                         totalRounds: $totalRounds,
+                         enableSound: $enableSound)
+                .navigationTitle("Create Timer")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            saveTimer()
+                        }
+                        .disabled(name.isEmpty)
+                    }
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Rest Time")
-                        .font(.subheadline)
-                    DurationPicker(duration: $restDuration)
-                        .frame(height: 150)
-                }
-            }
-
-            Section(header: Text("Rounds")) {
-                Stepper("Rounds: \(totalRounds == 0 ? "∞" : "\(totalRounds)")", value: $totalRounds, in: 0...100)
-            }
-        }
-        .navigationTitle("Create Timer")
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    saveTimer()
-                }
-                .disabled(name.isEmpty)
-            }
         }
     }
 
     private func saveTimer() {
-        timerManager.addTimer(name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds)
+        timerManager.addTimer(name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds, enableSound: enableSound)
         connectivityProvider.sendTimers(timerManager.timers)
         dismiss()
     }
 }
+
 
 #Preview {
     NavigationView {
