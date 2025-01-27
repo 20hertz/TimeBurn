@@ -15,7 +15,7 @@ struct EditView: View {
     // The timer being edited
     let timer: IntervalTimer
 
-    // State properties pre-filled with existing values.
+    // State properties pre-filled with existing values
     @State private var name: String
     @State private var activeDuration: Int
     @State private var restDuration: Int
@@ -26,7 +26,7 @@ struct EditView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
 
-    // Initialize the state with the timer's current values.
+    // Initialize the state with the timer's current values
     init(timer: IntervalTimer) {
         self.timer = timer
         _name = State(initialValue: timer.name)
@@ -37,24 +37,37 @@ struct EditView: View {
     }
 
     var body: some View {
-        NavigationView {
-            TimerForm(name: $name,
-                         activeDuration: $activeDuration,
-                         restDuration: $restDuration,
-                         totalRounds: $totalRounds,
-                         enableSound: $enableSound)
-                .navigationTitle("Edit Timer")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Update") {
-                            saveChanges()
-                        }
-                        .disabled(name.isEmpty || activeDuration <= 0)
-                    }
+        TimerForm(
+            name: $name,
+            activeDuration: $activeDuration,
+            restDuration: $restDuration,
+            totalRounds: $totalRounds,
+            enableSound: $enableSound
+        )
+        .navigationTitle("Edit Timer")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
                 }
-                .alert(isPresented: $showingAlert) {
-                    Alert(title: Text("Invalid Input"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Update") {
+                    saveChanges()
                 }
+                .disabled(name.isEmpty || activeDuration <= 0)
+            }
+        }
+        .alert(isPresented: $showingAlert) {
+            Alert(
+                title: Text("Invalid Input"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 
@@ -73,7 +86,14 @@ struct EditView: View {
         }
 
         // Update the timer in TimerManager
-        timerManager.updateTimer(timer, name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds, enableSound: enableSound)
+        timerManager.updateTimer(
+            timer,
+            name: name,
+            activeDuration: activeDuration,
+            restDuration: restDuration,
+            totalRounds: totalRounds,
+            enableSound: enableSound
+        )
         
         // Synchronize with connected devices
         connectivityProvider.sendTimers(timerManager.timers)
@@ -85,8 +105,13 @@ struct EditView: View {
 
 #Preview {
     NavigationView {
-        // Create a sample timer for preview purposes.
-        let sampleTimer = IntervalTimer(name: "Sample Timer", activeDuration: 60, restDuration: 30, totalRounds: 5, enableSound: true)
+        let sampleTimer = IntervalTimer(
+            name: "Sample Timer",
+            activeDuration: 60,
+            restDuration: 30,
+            totalRounds: 5,
+            enableSound: true
+        )
         EditView(timer: sampleTimer)
             .environmentObject(TimerManager.shared)
             .environmentObject(WatchConnectivityProvider.shared)

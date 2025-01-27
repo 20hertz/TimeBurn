@@ -19,23 +19,33 @@ struct CreateView: View {
     @State private var enableSound: Bool = true
 
     var body: some View {
-        NavigationView {
-            TimerForm(name: $name,
-                         activeDuration: $activeDuration,
-                         restDuration: $restDuration,
-                         totalRounds: $totalRounds,
-                         enableSound: $enableSound)
-                .navigationTitle("Create Timer")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            saveTimer()
-                        }
-                        .disabled(name.isEmpty)
-                    }
+        TimerForm(
+            name: $name,
+            activeDuration: $activeDuration,
+            restDuration: $restDuration,
+            totalRounds: $totalRounds,
+            enableSound: $enableSound
+        )
+        .navigationTitle("Create Timer")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
                 }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    saveTimer()
+                }
+                .disabled(name.isEmpty)
+            }
         }
     }
+
 
     private func saveTimer() {
         timerManager.addTimer(name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds, enableSound: enableSound)
