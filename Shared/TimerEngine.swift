@@ -223,14 +223,19 @@ public class TimerEngine: ObservableObject {
     /// and an absolute event timestamp.
     /// The receiver uses these values to update its state and adjusts its periodStartTime
     /// to account for any transmission delay.
-    public func applyAction(_ action: TimerAction,
-                            eventTimestamp: Date,
-                            payloadRemainingTime: Int,
-                            payloadIsRest: Bool,
-                            payloadCurrentRound: Int) {
+    public func applyAction(
+        _ action: TimerAction,
+        eventTimestamp: Date,
+        payloadRemainingTime: Int,
+        payloadIsRest: Bool,
+        payloadCurrentRound: Int
+    ) {
         // Override the local state with the sender’s snapshot.
         remainingTime = payloadRemainingTime
         currentRound = payloadCurrentRound
+        
+        // Only forcibly set `phase` on watchOS
+        #if os(watchOS)
         if payloadIsRest {
             phase = .rest
             periodTotalDuration = timer.restDuration
@@ -238,6 +243,15 @@ public class TimerEngine: ObservableObject {
             phase = .active
             periodTotalDuration = timer.activeDuration
         }
+        #else
+        // iOS does *not* forcibly set the phase, so that if we’re idle,
+        // calling `play()` triggers the “idle -> active” path that rings the bell.
+        if payloadIsRest {
+            periodTotalDuration = timer.restDuration
+        } else {
+            periodTotalDuration = timer.activeDuration
+        }
+        #endif
         
         // Compute the raw offset
         let rawOffset = Date().timeIntervalSince(eventTimestamp)
@@ -256,12 +270,12 @@ public class TimerEngine: ObservableObject {
         
         // Perform the requested action.
         switch action {
-        case .play:
-            play()
-        case .pause:
-            pause()
-        case .reset:
-            reset()
+            case .play:
+                play()
+            case .pause:
+                pause()
+            case .reset:
+                reset()
         }
     }
 }

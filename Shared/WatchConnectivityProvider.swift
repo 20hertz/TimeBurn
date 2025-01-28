@@ -62,10 +62,10 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
             "actionEvent": true,
             "timerID": timerID.uuidString,
             "action": action.rawValue,
-            "timestamp": Date().timeIntervalSince1970,   // Absolute timestamp.
-            "remainingTime": engine.remainingTime,         // Sender's current remainingTime.
-            "isRestPeriod": (engine.phase == .rest),         // Sender's phase.
-            "currentRound": engine.currentRound             // Sender's current round.
+            "timestamp": Date().timeIntervalSince1970,
+            "remainingTime": engine.remainingTime,
+            "isRestPeriod": (engine.phase == .rest),
+            "currentRound": engine.currentRound
         ]
         
         #if os(iOS)
@@ -94,11 +94,12 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         DispatchQueue.main.async {
             if let found = TimerManager.shared.timers.first(where: { $0.id.uuidString == timerIDString }) {
                 let engine = ActiveTimerEngines.shared.engine(for: found)
-                engine.applyAction(action,
-                                   eventTimestamp: timestampDate,
-                                   payloadRemainingTime: remainingTimePayload,
-                                   payloadIsRest: isRestPayload,
-                                   payloadCurrentRound: currentRoundPayload)
+                engine.applyAction(
+                    action,
+                    eventTimestamp: timestampDate,
+                    payloadRemainingTime: remainingTimePayload,
+                    payloadIsRest: isRestPayload,
+                    payloadCurrentRound: currentRoundPayload)
             }
         }
     }
