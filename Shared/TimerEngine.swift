@@ -234,24 +234,11 @@ public class TimerEngine: ObservableObject {
         remainingTime = payloadRemainingTime
         currentRound = payloadCurrentRound
         
-        // Only forcibly set `phase` on watchOS
-        #if os(watchOS)
-        if payloadIsRest {
-            phase = .rest
-            periodTotalDuration = timer.restDuration
-        } else {
-            phase = .active
-            periodTotalDuration = timer.activeDuration
-        }
-        #else
-        // iOS does *not* forcibly set the phase, so that if we’re idle,
-        // calling `play()` triggers the “idle -> active” path that rings the bell.
         if payloadIsRest {
             periodTotalDuration = timer.restDuration
         } else {
             periodTotalDuration = timer.activeDuration
         }
-        #endif
         
         // Compute the raw offset
         let rawOffset = Date().timeIntervalSince(eventTimestamp)

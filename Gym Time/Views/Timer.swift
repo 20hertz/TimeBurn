@@ -31,17 +31,17 @@ struct TimerView: View {
                        height: geometry.size.width * 0.75)
                 .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
-            .frame(height: UIScreen.main.bounds.width * 0.75) // Fixed height based on screen width
+            .frame(height: UIScreen.main.bounds.width * 0.75)
 
             roundIndicator()
 
             HStack {
                 if engine.phase != .idle {
                     resetButton()
-                        .frame(width: 60, height: 60) // Increased size
+                        .frame(width: 60, height: 60)
                         .overlay(
                             Circle()
-                                .stroke(Color.accentColor, lineWidth: 2) // Solid border
+                                .stroke(Color.accentColor, lineWidth: 2)
                         )
                         .clipShape(Circle())
                 }
@@ -123,8 +123,8 @@ struct TimerView: View {
                 .padding(20)
                 .foregroundColor(.white)
         }
-        .frame(width: 80, height: 80) // Increased size
-        .background(Color.accentColor) // Solid accent color background
+        .frame(width: 80, height: 80)
+        .background(Color.accentColor)
         .clipShape(Circle())
         .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
         .accessibilityHint(engine.isRunning ? "Pauses the current timer." : "Starts the timer.")
