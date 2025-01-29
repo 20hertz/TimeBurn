@@ -110,11 +110,9 @@ struct TimerView: View {
     private func playPauseButton() -> some View {
         Button {
             if engine.isRunning {
-                engine.pause()
-                sendAction(.pause)
+                localApply(.pause)
             } else {
-                engine.play()
-                sendAction(.play)
+                localApply(.play)
             }
         } label: {
             Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
@@ -132,8 +130,7 @@ struct TimerView: View {
 
     private func resetButton() -> some View {
         Button {
-            engine.reset()
-            sendAction(.reset)
+            localApply(.reset)
         } label: {
             Image(systemName: "arrow.counterclockwise")
                 .resizable()
@@ -145,7 +142,23 @@ struct TimerView: View {
         .accessibilityHidden(engine.phase == .idle)
     }
 
-    private func sendAction(_ action: TimerAction) {
+    private func localApply(_ action: TimerAction) {
+        // 1) Build the local payload from the current engine state
+        let eventTimestamp = Date()
+        let payloadRemainingTime = engine.remainingTime
+        let payloadIsRest = (engine.phase == .rest)
+        let payloadCurrentRound = engine.currentRound
+
+        // 2) Locally apply the action so we do “reset others + play/pause/etc.” all in applyAction
+        engine.applyAction(
+            action,
+            eventTimestamp: eventTimestamp,
+            payloadRemainingTime: payloadRemainingTime,
+            payloadIsRest: payloadIsRest,
+            payloadCurrentRound: payloadCurrentRound
+        )
+
+        // 3) Send the action across to the other device
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
 }

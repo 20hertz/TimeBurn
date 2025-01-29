@@ -27,8 +27,7 @@ struct WatchTimerView: View {
             HStack(spacing: 20) {
                 if engine.phase != .idle {
                     Button {
-                        engine.reset()
-                        sendAction(.reset)
+                        localApply(.reset)
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }
@@ -36,11 +35,9 @@ struct WatchTimerView: View {
                 
                 Button {
                     if engine.isRunning {
-                        engine.pause()
-                        sendAction(.pause)
+                        localApply(.pause)
                     } else {
-                        engine.play()
-                        sendAction(.play)
+                        localApply(.play)
                     }
                 } label: {
                     Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
@@ -77,9 +74,23 @@ struct WatchTimerView: View {
         }
     }
     
-    private func sendAction(_ action: TimerAction) {
+    private func localApply(_ action: TimerAction) {
+        let eventTimestamp = Date()
+        let payloadRemainingTime = engine.remainingTime
+        let payloadIsRest = (engine.phase == .rest)
+        let payloadCurrentRound = engine.currentRound
+        
+        engine.applyAction(
+            action,
+            eventTimestamp: eventTimestamp,
+            payloadRemainingTime: payloadRemainingTime,
+            payloadIsRest: payloadIsRest,
+            payloadCurrentRound: payloadCurrentRound
+        )
+        
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
+
 }
 
 #Preview {

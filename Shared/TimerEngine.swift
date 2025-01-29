@@ -244,12 +244,7 @@ public class TimerEngine: ObservableObject {
         // Override the local state with the sender’s snapshot.
         remainingTime = payloadRemainingTime
         currentRound = payloadCurrentRound
-        
-        if payloadIsRest {
-            periodTotalDuration = timer.restDuration
-        } else {
-            periodTotalDuration = timer.activeDuration
-        }
+        periodTotalDuration = payloadIsRest ? timer.restDuration : timer.activeDuration
         
         // Compute the raw offset
         let rawOffset = Date().timeIntervalSince(eventTimestamp)
@@ -269,6 +264,7 @@ public class TimerEngine: ObservableObject {
         // Perform the requested action.
         switch action {
             case .play:
+                ActiveTimerEngines.shared.resetAnyRunningTimers(except: timer.id)
                 play()
             case .pause:
                 pause()

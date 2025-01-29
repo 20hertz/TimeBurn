@@ -100,7 +100,8 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
                     eventTimestamp: timestampDate,
                     payloadRemainingTime: remainingTimePayload,
                     payloadIsRest: isRestPayload,
-                    payloadCurrentRound: currentRoundPayload)
+                    payloadCurrentRound: currentRoundPayload
+                )
             }
         }
     }

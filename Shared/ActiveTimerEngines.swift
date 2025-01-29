@@ -26,4 +26,13 @@ public class ActiveTimerEngines {
             return newEngine
         }
     }
+    
+    /// Resets all running timers except the one with this UUID.
+    public func resetAnyRunningTimers(except timerID: UUID) {
+        for (id, engine) in engines {
+            if id != timerID, engine.isRunning {
+                engine.reset()
+            }
+        }
+    }
 }
