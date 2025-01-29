@@ -70,10 +70,28 @@ public class TimerEngine: ObservableObject {
     
     // MARK: - Configuration
     
-    /// Updates the configuration and resets the engine.
+    /// Updates the configuration and resets the engine.  Reset durations or round count changes.
     public func updateConfiguration(to newTimer: IntervalTimer) {
-        self.timer = newTimer
-        reset()
+        // If the durations or round count changed, ephemeral state is invalid → reset.
+        let durationsChanged =
+            (timer.activeDuration != newTimer.activeDuration) ||
+            (timer.restDuration   != newTimer.restDuration)   ||
+            (timer.totalRounds    != newTimer.totalRounds)
+        
+        // Update name, sound, etc. without resetting ephemeral state:
+        self.timer.name = newTimer.name
+        self.timer.enableSound = newTimer.enableSound
+        
+        // Now check if we must also update durations:
+        if durationsChanged {
+            // Replace the entire config
+            self.timer.activeDuration = newTimer.activeDuration
+            self.timer.restDuration   = newTimer.restDuration
+            self.timer.totalRounds    = newTimer.totalRounds
+            
+            // That invalidates ephemeral countdown → reset
+            reset()
+        }
     }
     
     /// Subscribes to TimerManager’s timers (if you'd like configuration changes to update the engine automatically).
