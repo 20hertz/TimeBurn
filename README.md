@@ -16,7 +16,6 @@ Gym Time is a cross-platform interval timer application for iOS and watchOS. It 
 5. [TimerEngine Details](#timerengine-details)
 6. [Creating and Editing Timers](#creating-and-editing-timers)
 7. [User Interface Highlights](#user-interface-highlights)
-8. [How to Contribute](#how-to-contribute)
 
 ---
 
@@ -27,6 +26,8 @@ Gym Time is designed around a **separation of concerns**:
 - **`TimerManager`** manages permanent timer configurations (name, active/rest durations, round counts), storing them in an App Group for sharing between iOS and watchOS.
 - **`TimerEngine`** manages ephemeral countdown details (remaining time, current round, active vs. rest phase), never persisting these to disk.
 - **`WatchConnectivityProvider`** synchronizes user actions (play, pause, reset) between devices, ensuring minimal latency and consistent ephemeral state.
+
+Timers can be **started** and **controlled** on either device. Whichever device initiates an action is the “Lead Device,” immediately applying the action locally, then notifying the other device to stay in sync.
 
 ---
 
@@ -51,6 +52,7 @@ Gym Time is designed around a **separation of concerns**:
 
   - Maintains ephemeral countdown state (`remainingTime`, `currentRound`, `phase`).
   - Provides methods for `play()`, `pause()`, `reset()`, and transitions between active/rest phases.
+  - Implements “lead device” logic by resetting any other running timers (optional) before playing a new one if desired.
 
 - **`ActiveTimerEngines.swift`**
 
@@ -58,7 +60,7 @@ Gym Time is designed around a **separation of concerns**:
 
 - **`WatchConnectivityProvider.swift`**
   - Manages data transfer over `WCSession`.
-  - Sends/receives action events and full timer lists between iOS and watchOS.
+  - Sends/receives action events (`.play`, `.pause`, `.reset`) and full timer lists between iOS and watchOS.
 
 ### 2.2 iOS Components
 
@@ -81,6 +83,7 @@ Gym Time is designed around a **separation of concerns**:
 
   - Shows the current countdown, round indicators, and main controls (Reset, Play/Pause).
   - Circular progress UI for active/rest durations.
+  - Uses `applyAction(...)` for user actions so any other running timer can be reset if needed.
 
 - **`EditView.swift`**
 
@@ -107,6 +110,7 @@ Gym Time is designed around a **separation of concerns**:
 - **`WatchTimerView.swift`**
   - Displays the remaining time, round indicators, and play/pause/reset controls.
   - Background color changes to green/red for active/rest phases.
+  - Also calls `applyAction(...)` for local user actions, ensuring any other running timer is reset on both devices.
 
 ---
 
@@ -114,18 +118,18 @@ Gym Time is designed around a **separation of concerns**:
 
 1. **Creation/Editing**
 
-   - iOS views (`CreateView` or `EditView`) modify timers in `TimerManager`.
+   - iOS `CreateView` or `EditView` modifies timers in `TimerManager`.
    - The watch is informed via `WatchConnectivityProvider.sendTimers(...)`.
 
 2. **Selection**
 
-   - Tapping on a timer row fetches its `TimerEngine` from `ActiveTimerEngines`.
-   - The user navigates to the timer view (iOS or watchOS).
+   - Tapping a timer row obtains its `TimerEngine` from `ActiveTimerEngines`.
+   - The user navigates to `TimerView` or `WatchTimerView`.
 
 3. **Actions** (Play/Pause/Reset)
-   - The local device updates its `TimerEngine` immediately (the **Lead Device** approach).
-   - It sends an action event to the other device, including a snapshot of ephemeral state.
-   - The other device applies that action (`applyAction(...)`) to stay in sync, compensating for network delay.
+   - The local device applies the action immediately (the “Lead Device” approach) via `applyAction(...)`.
+   - It sends an action event to the other device with the ephemeral snapshot.
+   - The other device applies the same action, synchronizing the countdown.
 
 ---
 
@@ -134,20 +138,22 @@ Gym Time is designed around a **separation of concerns**:
 **WatchConnectivity** handles two primary data paths:
 
 1. **Full Timer List**
+
    - Syncs the entire array of `IntervalTimer` objects across devices.
+
 2. **Action Events**
-   - A small payload with timestamp, `remainingTime`, `isRestPeriod`, and `currentRound`.
-   - Triggers `.play`, `.pause`, or `.reset` on the receiving side.
+   - A small payload (timestamp, `remainingTime`, `isRestPeriod`, `currentRound`).
+   - Triggers `.play`, `.pause`, or `.reset` in `TimerEngine` on the receiving side.
 
 ### The Lead Device Pattern
 
-Whichever device the user interacts with (iOS or watchOS) becomes the **lead device**:
+Whichever device the user taps is the **lead device**:
 
-- It immediately performs the local state transition by calling `play()`, `pause()`, or `reset()`, so there’s no latency for the user.
+- It immediately performs the local state transition by calling `applyAction(.play/.pause/.reset, …)`.
 - It then sends an action message to the other device.
-- The receiving device calls `applyAction(...)` without forcibly setting `phase`, allowing its own `play()` or `pause()` logic to execute any first‐transition bell or haptic feedback.
+- The other device calls the same `applyAction(...)`, staying in sync without extra latencies.
 
-This ensures minimal round-trip delays and consistent ephemeral state on both watchOS and iOS.
+This approach ensures minimal round-trip delays for the user’s local interactions.
 
 ---
 
@@ -161,12 +167,13 @@ This ensures minimal round-trip delays and consistent ephemeral state on both wa
   - `.completed`: All rounds are finished.
 
 - **Key Methods**:
-  - **`play()`**: Starts or resumes the countdown. Triggers `.idle → .active` transitions.
+  - **`play()`**: Begins or resumes the countdown, triggers `.idle → .active`.
   - **`pause()`**: Halts the countdown, finalizing `remainingTime`.
   - **`reset()`**: Returns the timer to `.idle`.
   - **`advancePeriod()`**: Moves from active → rest, or to the next round, or to `.completed` if all rounds are done.
+  - Optionally, **when playing a new timer**, `TimerEngine` can **reset other running timers** so only one is active at a time, if desired.
 
-No ephemeral state is persisted; all runtime tracking is purely in memory.
+No ephemeral state is ever persisted; it’s all in memory.
 
 ---
 
@@ -174,13 +181,13 @@ No ephemeral state is persisted; all runtime tracking is purely in memory.
 
 - **CreateView (iOS)**
 
-  - Inputs: timer name, active/rest durations, and round count (or 0 for infinite).
-  - Calls `TimerManager.addTimer(...)` to store the new `IntervalTimer`.
-  - Immediately syncs the new list to watch if connected.
+  - Inputs: timer name, durations, and round count (or 0 for infinite).
+  - Calls `TimerManager.addTimer(...)`.
+  - Immediately syncs to watch if connected.
 
 - **EditView (iOS)**
   - Edits an existing `IntervalTimer`.
-  - On save, updates `TimerManager` and sends the revised list to watch.
+  - On save, updates `TimerManager` and syncs changes to watch.
 
 ---
 
@@ -189,41 +196,38 @@ No ephemeral state is persisted; all runtime tracking is purely in memory.
 ### iOS
 
 - **HomeView**
-  - List of timers or a placeholder if none exist.
-  - A “+” button in the navigation bar to create a new timer.
+
+  - Lists timers or shows a placeholder if none exist.
+  - Top bar “+” for creating new timers.
+
 - **RowView**
-  - Displays timer name and summary (“∞ x M:SS | M:SS” or “X x M:SS | M:SS”).
-  - Blue dot if `TimerEngine.isRunning`.
+
+  - Displays the timer name and `∞ x M:SS | M:SS` or `X x M:SS | M:SS`.
+  - A blue dot if `TimerEngine.isRunning`.
+
 - **TimerView**
-  - Circular progress for the countdown.
-  - Rest label shown/hidden by opacity.
-  - Round indicators, then a bottom bar with **Reset** (on the left if active) and **Play/Pause**.
+  - Shows a circular progress for the current countdown.
+  - A Rest label is shown or hidden by opacity.
+  - Round indicators, plus bottom controls (Reset on the left if active, Play/Pause).
+  - Uses the “applyAction” approach for minimal code duplication.
 
 ### watchOS
 
 - **WatchHomeView**
-  - List of timers or a placeholder if none exist.
+
+  - List of existing timers or placeholder if empty.
+
 - **WatchTimerView**
-  - Remaining time in a large monospaced font.
-  - Background changes color for active vs. rest.
-  - **Play/Pause** and **Reset** buttons at the bottom.
+  - Large monospaced countdown.
+  - Background color changes to green/red for active/rest.
+  - Play/Pause and Reset at the bottom.
+  - Also calls `applyAction(...)` on local interactions to stay consistent with iOS.
 
 ---
 
-## 8. How to Contribute
-
-1. **Fork** or **Branch** from the main repo.
-2. **Implement** features or bug fixes within the existing architectural guidelines:
-   - All persistent config in `TimerManager`.
-   - Ephemeral state in `TimerEngine`.
-   - Cross-device sync via `WatchConnectivityProvider`.
-3. **Submit a Pull Request**
-   - Make sure your changes pass any Continuous Integration checks (if enabled).
-   - Provide meaningful commit messages and test thoroughly on both iOS and watchOS simulators.
-
 ### Code Style
 
-- SwiftUI-based views.
-- Keep ephemeral (in-memory) logic separate from persistent data.
-- Provide descriptive commit messages.
-- Thoroughly test any changes on both platforms.
+- SwiftUI-based views
+- Separate ephemeral logic (in-memory only) from persistent data.
+- Keep commit messages descriptive.
+- Thoroughly test on both iOS and watchOS.
