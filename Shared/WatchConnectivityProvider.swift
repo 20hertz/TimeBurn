@@ -60,6 +60,7 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         
         let payload: [String: Any] = [
             "actionEvent": true,
+            "navigateToTimer": timerID.uuidString,
             "timerID": timerID.uuidString,
             "action": action.rawValue,
             "timestamp": Date().timeIntervalSince1970,
@@ -121,6 +122,13 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         // 2) Incoming action event
         if let isActionEvent = message["actionEvent"] as? Bool, isActionEvent {
             handleActionEvent(message)
+        }
+        
+        // 3) Incoming "navigateToTimer"
+        if let timerIDString = message["navigateToTimer"] as? String {
+            DispatchQueue.main.async {
+                NavigationCoordinator.shared.navigateToTimer(uuidString: timerIDString)
+            }
         }
     }
     

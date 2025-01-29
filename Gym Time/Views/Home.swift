@@ -10,6 +10,9 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var timerManager: TimerManager
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+    
+    @State private var navigateToSelectedTimer = false
     
     var body: some View {
         Group {
@@ -41,6 +44,23 @@ struct HomeView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+            }
+        }
+        .navigationDestination(isPresented: $navigateToSelectedTimer) {
+            if let uuid = navigationCoordinator.selectedTimerID,
+               let timer = timerManager.timers.first(where: { $0.id == uuid }) {
+                let engine = ActiveTimerEngines.shared.engine(for: timer)
+                TimerView(engine: engine)
+            } else {
+                Text("Timer not found.")
+            }
+        }
+        .onChange(of: navigationCoordinator.selectedTimerID) { newValue in
+            // If we got a new timer, navigate
+            if newValue != nil {
+                navigateToSelectedTimer = true
+            } else {
+                navigateToSelectedTimer = false
             }
         }
     }

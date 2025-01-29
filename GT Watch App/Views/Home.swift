@@ -4,11 +4,15 @@
 //
 //  Created by Stéphane on 2025-01-07.
 //
+
 import SwiftUI
 
 struct WatchHomeView: View {
     @EnvironmentObject var timerManager: TimerManager
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
 
+    @State private var navigateToSelectedTimer = false
+    
     var body: some View {
         Group {
             if timerManager.timers.isEmpty {
@@ -32,6 +36,18 @@ struct WatchHomeView: View {
             }
         }
         .navigationTitle("Timers")
+        .navigationDestination(isPresented: $navigateToSelectedTimer) {
+            if let uuid = navigationCoordinator.selectedTimerID,
+               let timer = timerManager.timers.first(where: { $0.id == uuid }) {
+                let engine = ActiveTimerEngines.shared.engine(for: timer)
+                WatchTimerView(engine: engine)
+            } else {
+                Text("Timer not found.")
+            }
+        }
+        .onChange(of: navigationCoordinator.selectedTimerID) { oldValue, newValue in
+            navigateToSelectedTimer = (newValue != nil)
+        }
     }
 }
 

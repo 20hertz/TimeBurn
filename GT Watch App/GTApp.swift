@@ -12,7 +12,8 @@ struct TimerApp_watchOS: App {
     
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
-
+    @StateObject private var navigationCoordinator = NavigationCoordinator.shared
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack {
@@ -20,6 +21,7 @@ struct TimerApp_watchOS: App {
             }
             .environmentObject(timerManager)
             .environmentObject(connectivityProvider)
+            .environmentObject(navigationCoordinator)
             .onAppear {
                 connectivityProvider.startSession()
             }

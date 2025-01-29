@@ -18,13 +18,6 @@ class AudioManager {
         // Observe for notifications to play sounds
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handlePhaseChangeToRestNotification(_:)),
-            name: .timerPhaseChangedToRest,
-            object: nil
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
             selector: #selector(handlePhaseChangeToActiveNotification(_:)),
             name: .timerPhaseChangedToActive,
             object: nil
@@ -62,16 +55,6 @@ class AudioManager {
         }
     }
     
-    /// Handles phase change to rest notifications.
-    @objc private func handlePhaseChangeToRestNotification(_ notification: Notification) {
-        if let timer = notification.object as? IntervalTimer {
-            if timer.enableSound {
-                playSound(soundName: "Bell - 3 Rings")
-            }
-        }
-    }
-    
-    /// Handles phase change to active notifications.
     @objc private func handlePhaseChangeToActiveNotification(_ notification: Notification) {
         if let timer = notification.object as? IntervalTimer {
             if timer.enableSound {
@@ -89,11 +72,9 @@ class AudioManager {
 }
 
 extension Notification.Name {
-    /// Notification posted when the timer phase changes to rest.
-    static let timerPhaseChangedToRest = Notification.Name("timerPhaseChangedToRest")
-    
     /// Notification posted when a new round starts (phase changes to active).
     static let timerPhaseChangedToActive = Notification.Name("timerPhaseChangedToActive")
     
+    /// Notification posted when the active phase ends.
     static let timerActivePhaseEnded = Notification.Name("timerActivePhaseEnded")
 }

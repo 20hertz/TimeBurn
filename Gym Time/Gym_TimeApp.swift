@@ -12,7 +12,8 @@ struct TimerApp_iOS: App {
 
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
-
+    @StateObject private var navigationCoordinator = NavigationCoordinator.shared
+    
     private let audioManager = AudioManager.shared
     
     var body: some Scene {
@@ -22,6 +23,7 @@ struct TimerApp_iOS: App {
             }
             .environmentObject(timerManager)
             .environmentObject(connectivityProvider)
+            .environmentObject(navigationCoordinator)
             .onAppear {
                 connectivityProvider.startSession()
             }
