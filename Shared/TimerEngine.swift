@@ -169,9 +169,21 @@ public class TimerEngine: ObservableObject {
     
     /// Handles transitions between active, rest, and completion.
     private func advancePeriod() {
+        // We only post "timerActivePhaseEnded" if we are about to go to rest
+        // OR if this is the final active round.
         if phase == .active {
-            // If the active phase just finished and we're on the last round, mark as completed.
-            if totalRounds != 0 && currentRound == totalRounds {
+            let isLastActiveRound = (totalRounds != 0 && currentRound == totalRounds)
+            
+            #if os(iOS)
+            // Post 3-rings if either this is the last round OR restDuration > 0
+            if isLastActiveRound || restDuration > 0 {
+                NotificationCenter.default.post(name: .timerActivePhaseEnded, object: timer)
+            }
+            #endif
+            
+            // Now handle what happens after finishing this active period:
+            if isLastActiveRound {
+                // All done
                 phase = .completed
                 isRunning = false
                 remainingTime = 0
@@ -179,20 +191,19 @@ public class TimerEngine: ObservableObject {
                 return
             }
             
-            // Transition from active to rest if a rest duration is defined.
+            // If there's a rest interval, go to rest phase
             if restDuration > 0 {
                 phase = .rest
                 periodTotalDuration = restDuration
                 remainingTime = restDuration
                 periodStartTime = Date()
-                #if os(iOS)
-                NotificationCenter.default.post(name: .timerPhaseChangedToRest, object: timer)
-                #endif
             } else {
+                // If restDuration == 0, skip rest entirely and jump to the next round
                 nextRound()
             }
+            
         } else if phase == .rest {
-            // Transition from rest to the next active phase.
+            // After a rest period ends, we start the next active round
             nextRound()
         }
     }

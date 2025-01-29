@@ -29,6 +29,13 @@ class AudioManager {
             name: .timerPhaseChangedToActive,
             object: nil
         )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleActivePhaseEnded(_:)),
+            name: .timerActivePhaseEnded,
+            object: nil
+        )
     }
     
     deinit {
@@ -72,6 +79,13 @@ class AudioManager {
             }
         }
     }
+    
+    @objc private func handleActivePhaseEnded(_ notification: Notification) {
+        guard let timer = notification.object as? IntervalTimer else { return }
+        if timer.enableSound {
+            playSound(soundName: "Bell - 3 Rings")
+        }
+    }
 }
 
 extension Notification.Name {
@@ -80,4 +94,6 @@ extension Notification.Name {
     
     /// Notification posted when a new round starts (phase changes to active).
     static let timerPhaseChangedToActive = Notification.Name("timerPhaseChangedToActive")
+    
+    static let timerActivePhaseEnded = Notification.Name("timerActivePhaseEnded")
 }
