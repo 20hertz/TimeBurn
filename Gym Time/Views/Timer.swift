@@ -35,7 +35,9 @@ struct TimerView: View {
 
             roundIndicator()
 
+            // Updated HStack for Buttons
             HStack {
+                // Left Side: Reset Button or Spacer
                 if engine.phase != .idle {
                     resetButton()
                         .frame(width: 60, height: 60)
@@ -44,11 +46,31 @@ struct TimerView: View {
                                 .stroke(Color.accentColor, lineWidth: 2)
                         )
                         .clipShape(Circle())
+                } else {
+                    Spacer()
+                        .frame(width: 60, height: 60) // Maintain alignment when resetButton is hidden
                 }
 
                 Spacer()
 
+                // Center: Play/Pause Button
                 playPauseButton()
+                    .frame(width: 100, height: 100) // Increased size
+                    .background(Color.accentColor)
+                    .clipShape(Circle())
+                    .shadow(radius: 5) // Optional: Add shadow for better visibility
+
+                Spacer()
+
+                // Right Side: Invisible Placeholder to Balance HStack
+                if engine.phase != .idle {
+                    resetButton()
+                        .frame(width: 60, height: 60)
+                        .hidden() // Invisible to balance the HStack
+                } else {
+                    Spacer()
+                        .frame(width: 60, height: 60) // Same width as resetButton
+                }
             }
             .padding(.horizontal, 40)
             .padding(.top, 20)
@@ -121,9 +143,10 @@ struct TimerView: View {
                 .padding(20)
                 .foregroundColor(.white)
         }
-        .frame(width: 80, height: 80)
+        .frame(width: 100, height: 100) // Increased size
         .background(Color.accentColor)
         .clipShape(Circle())
+        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
         .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
         .accessibilityHint(engine.isRunning ? "Pauses the current timer." : "Starts the timer.")
     }
