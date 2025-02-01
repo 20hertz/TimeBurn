@@ -179,7 +179,7 @@
 					};
 				};
 			};
-			buildConfigurationList = F4F26E4C2D2D826200AA8B3D /* Build configuration list for PBXProject "Gym Time" */;
+			buildConfigurationList = F4F26E4C2D2D826200AA8B3D /* Build configuration list for PBXProject "TimeBurn" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -488,7 +488,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		F4F26E4C2D2D826200AA8B3D /* Build configuration list for PBXProject "Gym Time" */ = {
+		F4F26E4C2D2D826200AA8B3D /* Build configuration list for PBXProject "TimeBurn" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F4F26E5D2D2D826400AA8B3D /* Debug */,
