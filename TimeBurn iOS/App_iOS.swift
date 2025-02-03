@@ -1,6 +1,6 @@
 //
 //  Gym_TimeApp.swift
-//  Gym Time
+//  TimeBurn
 //
 //  Created by Stéphane on 2025-01-07.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct TimerApp_iOS: App {
+struct App_iOS: App {
 
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared

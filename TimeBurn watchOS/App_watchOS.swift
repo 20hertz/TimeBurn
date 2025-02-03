@@ -1,6 +1,6 @@
 //
 //  GTApp.swift
-//  GT Watch App
+//  TimeBurn watchOS
 //
 //  Created by Stéphane on 2025-01-07.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct TimerApp_watchOS: App {
+struct App_watchOS: App {
     
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared

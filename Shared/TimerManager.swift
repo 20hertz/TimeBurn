@@ -22,7 +22,7 @@ public class TimerManager: ObservableObject {
     
     @Published public private(set) var timers: [IntervalTimer] = []
     
-    private let suiteName = "group.com.slo.Gym-Time"
+    private let suiteName = "group.com.slo.TimeBurn"
     
     private init() {
         loadTimers()

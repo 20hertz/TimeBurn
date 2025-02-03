@@ -1,6 +1,6 @@
-# Gym Time
+# TimeBurn
 
-Gym Time is a cross-platform interval timer application for iOS and watchOS. It lets users create timers with custom active and rest durations, round counts, and optional infinite runs. Timers are synchronized between iOS and watchOS, ensuring that when a user starts, pauses, or resets a timer on one device, the other device remains in sync.
+TimeBurn is a cross-platform interval timer application for iOS and watchOS. It lets users create timers with custom active and rest durations, round counts, and optional infinite runs. Timers are synchronized between iOS and watchOS, ensuring that when a user starts, pauses, or resets a timer on one device, the other device remains in sync.
 
 ---
 
@@ -21,7 +21,7 @@ Gym Time is a cross-platform interval timer application for iOS and watchOS. It 
 
 ## 1. Overview
 
-Gym Time is designed around a **separation of concerns**:
+TimeBurn is designed around a **separation of concerns**:
 
 - **`TimerManager`** manages permanent timer configurations (name, active/rest durations, round counts), storing them in an App Group for sharing between iOS and watchOS.
 - **`TimerEngine`** manages ephemeral countdown details (remaining time, current round, active vs. rest phase), never persisting these to disk.
@@ -45,7 +45,7 @@ Timers can be **started** and **controlled** on either device. Whichever device 
 
 - **`TimerManager.swift`**
 
-  - A singleton (`TimerManager.shared`) that persists timers to an App Group (`group.com.slo.Gym-Time`).
+  - A singleton (`TimerManager.shared`) that persists timers to an App Group (`group.com.slo.TimeBurn`).
   - Offers CRUD operations for adding, updating, and deleting timers.
 
 - **`TimerEngine.swift`**

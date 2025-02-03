@@ -1,6 +1,6 @@
 //
 //  AudioManager.swift
-//  Gym Time
+//  TimeBurn
 //
 //  Created by Stéphane on 2025-01-24.
 //
@@ -8,7 +8,7 @@
 import Foundation
 import AVFoundation
 
-/// Manages audio playback for the Gym Time app on iOS.
+/// Manages audio playback for the TimeBurn app on iOS.
 class AudioManager {
     static let shared = AudioManager()
     

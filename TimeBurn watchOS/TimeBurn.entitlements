@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.slo.Gym-Time</string>
+		<string>group.com.slo.TimeBurn</string>
 	</array>
 </dict>
 </plist>
