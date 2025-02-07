@@ -18,13 +18,6 @@ struct TimerForm: View {
 
     var body: some View {
         Form {
-            // Section for Timer Name
-            Section(header: Text("Timer Name")) {
-                TextField("Name", text: $name)
-                    .disableAutocorrection(true)
-            }
-
-            // Section for Durations
             Section(header: Text("Durations")) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Active Time")
@@ -40,16 +33,19 @@ struct TimerForm: View {
                 }
             }
 
-            // Section for Rounds
             Section(header: Text("Rounds")) {
                 Stepper("Rounds: \(totalRounds == 0 ? "∞" : "\(totalRounds)")", value: $totalRounds, in: 0...100)
             }
 
-            // Section for Bell Sounds
             Section {
                 Toggle(isOn: $enableSound) {
                     Text("Bell Sound")
                 }
+            }
+            
+            Section(header: Text("Timer Name")) {
+                TextField("Name", text: $name)
+                    .disableAutocorrection(true)
             }
         }
     }

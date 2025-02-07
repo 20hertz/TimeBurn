@@ -59,7 +59,7 @@ struct EditView: View {
                 Button("Update") {
                     saveChanges()
                 }
-                .disabled(name.isEmpty || activeDuration <= 0)
+                .disabled(activeDuration <= 0)
             }
         }
         .alert(isPresented: $showingAlert) {

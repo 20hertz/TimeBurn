@@ -59,13 +59,19 @@ struct RowView: View {
         NavigationLink(destination: WatchTimerView(engine: engine)) {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(timer.name)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        // No name provided – show the configuration string as headline.
+                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                            .font(.headline)
+                    } else {
+                        Text(timer.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 if engine.isRunning {
@@ -76,12 +82,6 @@ struct RowView: View {
             }
             .padding(.vertical, 4)
         }
-    }
-    
-    private func formatTime(from seconds: Int) -> String {
-        let minutes = seconds / 60
-        let secondsPart = seconds % 60
-        return String(format: "%d:%02d", minutes, secondsPart)
     }
 }
 

@@ -41,14 +41,19 @@ struct CreateView: View {
                 Button("Save") {
                     saveTimer()
                 }
-                .disabled(name.isEmpty)
             }
         }
     }
 
 
     private func saveTimer() {
-        timerManager.addTimer(name: name, activeDuration: activeDuration, restDuration: restDuration, totalRounds: totalRounds, enableSound: enableSound)
+        timerManager.addTimer(
+            name: name,
+            activeDuration: activeDuration,
+            restDuration: restDuration,
+            totalRounds: totalRounds,
+            enableSound: enableSound
+        )
         connectivityProvider.sendTimers(timerManager.timers)
         dismiss()
     }

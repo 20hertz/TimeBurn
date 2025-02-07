@@ -82,13 +82,23 @@ struct RowView: View {
         NavigationLink(destination: TimerView(engine: engine)) {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(timer.name)
+                    // Compute the configuration string once.
+                    let configText = "\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))"
+                    // Check if the timer has a non-empty name.
+                    let hasName = !timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    
+                    // Headline: Use the timer name if available; otherwise, use the config text.
+                    Text(hasName ? timer.name : configText)
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                    
+                    // Caption: Always render the config text,
+                    // but if there's no name, set opacity to 0 to reserve layout space.
+                    Text(configText)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .opacity(hasName ? 1 : 0)
                 }
                 Spacer()
                 if engine.isRunning {
@@ -99,12 +109,6 @@ struct RowView: View {
             }
             .padding(.vertical, 4)
         }
-    }
-    
-    private func formatTime(from seconds: Int) -> String {
-        let minutes = seconds / 60
-        let secondsPart = seconds % 60
-        return String(format: "%d:%02d", minutes, secondsPart)
     }
 }
 

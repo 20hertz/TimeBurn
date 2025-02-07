@@ -5,9 +5,7 @@
 //  Created by Stéphane on 2025-01-08.
 //
 
-
 import Foundation
-import Combine
 
 /// A publicly visible model representing a configurable interval timer.
 ///
@@ -38,9 +36,10 @@ public struct IntervalTimer: Identifiable, Codable, Equatable, Hashable {
     public var enableSound: Bool
     
     /// Creates a new IntervalTimer.
+    /// - Parameter name: Defaults to an empty string if not provided.
     public init(
         id: UUID = UUID(),
-        name: String,
+        name: String = "",
         activeDuration: Int,
         restDuration: Int,
         totalRounds: Int,
