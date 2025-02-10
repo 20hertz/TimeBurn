@@ -17,7 +17,11 @@ struct App_watchOS: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                WatchHomeView()
+                if timerManager.timers.isEmpty {
+                    WatchCreateView()
+                } else {
+                    WatchHomeView()
+                }
             }
             .environmentObject(timerManager)
             .environmentObject(connectivityProvider)
