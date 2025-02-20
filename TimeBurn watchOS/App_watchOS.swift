@@ -13,9 +13,10 @@ struct App_watchOS: App {
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
     @StateObject private var navigationCoordinator = NavigationCoordinator.shared
-    
-    var body: some Scene {
-        WindowGroup {
+
+    @ViewBuilder
+    private func rootView() -> some View {
+        if #available(watchOS 9.0, *) {
             NavigationStack {
                 if timerManager.timers.isEmpty {
                     WatchCreateView()
@@ -23,12 +24,26 @@ struct App_watchOS: App {
                     WatchHomeView()
                 }
             }
-            .environmentObject(timerManager)
-            .environmentObject(connectivityProvider)
-            .environmentObject(navigationCoordinator)
-            .onAppear {
-                connectivityProvider.startSession()
+        } else {
+            NavigationView {
+                if timerManager.timers.isEmpty {
+                    WatchCreateView()
+                } else {
+                    WatchHomeView()
+                }
             }
+        }
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            rootView()
+                .environmentObject(timerManager)
+                .environmentObject(connectivityProvider)
+                .environmentObject(navigationCoordinator)
+                .onAppear {
+                    connectivityProvider.startSession()
+                }
         }
     }
 }

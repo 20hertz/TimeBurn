@@ -4,202 +4,201 @@
 //
 //  Created by Stéphane on 2025-02-10.
 //
-
 import SwiftUI
-import WatchKit
 
 struct WatchCreateView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var timerManager: TimerManager
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
 
-    // Store durations as total seconds
-    @State private var activeDuration: Int = 60
-    @State private var restDuration: Int = 30
-    @State private var totalRounds: Int = 0
+    // Timer settings with default seconds set to 5 so active duration is never 0.
+    @State private var activeMinutes: Int = 0
+    @State private var activeSeconds: Int = 5
+    // For rounds, 0 represents infinite rounds; 1 or higher means finite rounds.
+    @State private var numberOfRounds: Int = 1
+    @State private var restMinutes: Int = 0
+    @State private var restSeconds: Int = 5
     @State private var enableSound: Bool = true
 
-    @State private var activeIndex: Int = 0  // Tracks the focused item
+    // TabView page tracking
+    @State private var currentPage: Int = 0
 
-    var sections: [(String, AnyView)] {
-        [
-            ("Active", AnyView(TimePickerView(totalSeconds: $activeDuration))),
-            ("Rest", AnyView(TimePickerView(totalSeconds: $restDuration))),
-            ("Rounds", AnyView(
-                HStack {
-                    Text("Rounds")
-                    Spacer()
-                    Picker("", selection: $totalRounds) {
-                        Text("∞").tag(0)
-                        ForEach(1..<21, id: \.self) { round in
-                            Text("\(round)").tag(round)
-                        }
-                    }
-                    .pickerStyle(WheelPickerStyle())
-                    .frame(maxWidth: 60)
-                }
-            )),
-            ("", AnyView(Toggle("Sound", isOn: $enableSound)))
-        ]
-    }
+    // Navigation state for new timer view
+    @State private var navigateToNewTimer: Bool = false
+    @State private var newTimerID: UUID? = nil
+
+    // Computed durations
+    var activeDuration: Int { activeMinutes * 60 + activeSeconds }
+    var restDuration: Int { restMinutes * 60 + restSeconds }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: -10) {
-                    ForEach(Array(sections.enumerated()), id: \.offset) { index, section in
-                        SnappingSection(header: section.0) {
-                            section.1
+        NavigationView {
+            VStack(spacing: 0) {
+                // Main content: swipable settings pages.
+                TabView(selection: $currentPage) {
+                    // Page 0: Active Duration
+                    VStack {
+                        Text("Active Duration")
+                            .font(.headline)
+                            .padding(.top, 8)
+                        TimePickerView(minutes: $activeMinutes, seconds: $activeSeconds)
+                            .padding(.vertical)
+                        Spacer()
+                    }
+                    .tag(0)
+                    
+                    // Page 1: Number of Rounds (with infinite option)
+                    VStack {
+                        Text("Number of Rounds")
+                            .font(.headline)
+                            .padding(.top, 8)
+                        Picker("", selection: $numberOfRounds) {
+                            ForEach(0..<100, id: \.self) { round in
+                                if round == 0 {
+                                    Text("∞")
+                                        .font(.system(size: 24, weight: numberOfRounds == round ? .bold : .regular))
+                                        .foregroundColor(numberOfRounds == round ? .primary : .gray)
+                                        .tag(round)
+                                } else {
+                                    Text("\(round)")
+                                        .font(.system(size: 24, weight: numberOfRounds == round ? .bold : .regular))
+                                        .foregroundColor(numberOfRounds == round ? .primary : .gray)
+                                        .tag(round)
+                                }
+                            }
                         }
-                        .id(index)  // Set ID for snapping
+                        .pickerStyle(WheelPickerStyle())
+                        .frame(maxWidth: .infinity)
+                        Spacer()
+                    }
+                    .tag(1)
+                    
+                    // Page 2: Rest Duration (shown only if numberOfRounds is not exactly 1)
+                    if numberOfRounds != 1 {
+                        VStack {
+                            Text("Rest Duration")
+                                .font(.headline)
+                                .padding(.top, 8)
+                            TimePickerView(minutes: $restMinutes, seconds: $restSeconds)
+                                .padding(.vertical)
+                            Spacer()
+                        }
+                        .tag(2)
+                    }
+                    
+                    // Page 3: Sound toggle
+                    VStack {
+                        Text("Sound")
+                            .font(.headline)
+                            .padding(.top, 8)
+                        Toggle("Enable Sound", isOn: $enableSound)
+                            .toggleStyle(SwitchToggleStyle())
+                            .padding()
+                        Spacer()
+                    }
+                    .tag(numberOfRounds == 1 ? 2 : 3)
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                .animation(.default, value: numberOfRounds)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // Top left cancel button
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.headline)
                     }
                 }
-                .padding(.vertical, 50)
-            }
-            .gesture(
-                DragGesture()
-                    .onEnded { value in
-                        withAnimation(.spring()) {
-                            if value.translation.height < -30, activeIndex < sections.count - 1 {
-                                activeIndex += 1
-                            } else if value.translation.height > 30, activeIndex > 0 {
-                                activeIndex -= 1
-                            }
-                            proxy.scrollTo(activeIndex, anchor: .center)  // Ensure snapping to center
-                        }
+                // Top right save button
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        saveTimer()
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(.headline)
                     }
+                }
+            }
+            // Hidden NavigationLink to push to the new timer's view upon saving.
+            .background(
+                NavigationLink(destination: destinationForNewTimer(), isActive: $navigateToNewTimer) {
+                    EmptyView()
+                }
+                .hidden()
             )
         }
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    saveTimer()
-                }
-            }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
+    }
+    
+    @ViewBuilder
+    private func destinationForNewTimer() -> some View {
+        if let id = newTimerID,
+           let timer = timerManager.timers.first(where: { $0.id == id }) {
+            let engine = ActiveTimerEngines.shared.engine(for: timer)
+            WatchTimerView(engine: engine)
+        } else {
+            Text("Timer not found")
         }
     }
-
+    
     private func saveTimer() {
         timerManager.addTimer(
             name: "",
             activeDuration: activeDuration,
-            restDuration: restDuration,
-            totalRounds: totalRounds,
+            restDuration: numberOfRounds == 1 ? 0 : restDuration,
+            totalRounds: numberOfRounds,
             enableSound: enableSound
         )
         connectivityProvider.sendTimers(timerManager.timers)
-        dismiss()
+        if let newTimer = timerManager.timers.last {
+            newTimerID = newTimer.id
+            navigateToNewTimer = true
+        }
     }
 }
 
-struct SnappingSection<Content: View>: View {
-    let header: String?
-    let content: Content
-
-    init(header: String? = nil, @ViewBuilder content: () -> Content) {
-        self.header = header
-        self.content = content()
-    }
+// Helper view: TimePickerView with seconds starting at 05 seconds.
+struct TimePickerView: View {
+    @Binding var minutes: Int
+    @Binding var seconds: Int
 
     var body: some View {
-        GeometryReader { proxy in
-            let minY = proxy.frame(in: .global).midY
-            let screenHeight = WKInterfaceDevice.current().screenBounds.height
-
-            let scale = max(0.9, 1 - abs(minY - screenHeight / 2) / (screenHeight / 2.5))
-            let opacity = max(0.4, 1 - abs(minY - screenHeight / 2) / (screenHeight / 2.5))
-
-            VStack {
-                if let header = header {
-                    Text(header)
-                        .font(.headline)
-                        .opacity(opacity)
+        HStack(spacing: 0) {
+            Picker("", selection: $minutes) {
+                ForEach(0..<60, id: \.self) { i in
+                    Text("\(i)")
+                        .font(.system(size: 24, weight: minutes == i ? .bold : .regular))
+                        .foregroundColor(minutes == i ? .primary : .gray)
+                        .tag(i)
                 }
-                content
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 15).fill(Color.blue.opacity(0.2)))
-                    .scaleEffect(scale)
-                    .opacity(opacity)
-                    .animation(.easeInOut(duration: 0.3), value: scale)
             }
-            .padding()
+            .frame(width: 70)
+            .clipped()
+            
+            Text(":")
+                .font(.system(size: 24, weight: .bold))
+                .padding(.horizontal, 4)
+            
+            Picker("", selection: $seconds) {
+                ForEach(1..<12, id: \.self) { i in
+                    let sec = i * 5
+                    Text(String(format: "%02d", sec))
+                        .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
+                        .foregroundColor(seconds == sec ? .primary : .gray)
+                        .tag(sec)
+                }
+            }
+            .frame(width: 70)
+            .clipped()
         }
-        .frame(height: 150)  // Controls height of each section
+        .labelsHidden()
     }
 }
-
 
 #Preview {
-    NavigationStack {
-        WatchCreateView()
-            .environmentObject(TimerManager.shared)
-            .environmentObject(WatchConnectivityProvider.shared)
-    }
-}
-
-struct TimePickerView: View {
-    @Binding var totalSeconds: Int
-
-    private var minutes: Int {
-        totalSeconds / 60
-    }
-    
-    private var seconds: Int {
-        totalSeconds % 60
-    }
-    
-    var body: some View {
-        GeometryReader { geometry in
-            let totalWidth = max(geometry.size.width, 150)  // ✅ Ensure a minimum width
-            let dividerWidth: CGFloat = 8
-            let columnWidth = max((totalWidth - dividerWidth) / 2, 50) // ✅ Ensure a minimum column width
-            
-            HStack(spacing: 0) {
-                // Minutes column
-                VStack(spacing: 0) {
-                    Picker("", selection: Binding(
-                        get: { minutes },
-                        set: { newMinutes in
-                            totalSeconds = newMinutes * 60 + seconds
-                        }
-                    )) {
-                        ForEach(0..<11, id: \.self) { minute in
-                            Text("\(minute)").tag(minute)
-                        }
-                    }
-                    .pickerStyle(WheelPickerStyle())
-                    .frame(width: columnWidth, height: 60)  // ✅ No more invalid width
-                    .clipped()
-                }
-                
-                Divider()
-                    .frame(width: dividerWidth, height: 60)
-                    .padding(.horizontal, 4)
-                
-                // Seconds column
-                VStack(spacing: 0) {
-                    Picker("", selection: Binding(
-                        get: { seconds },
-                        set: { newSeconds in
-                            totalSeconds = minutes * 60 + newSeconds
-                        }
-                    )) {
-                        ForEach(0..<60, id: \.self) { second in
-                            Text(String(format: "%02d", second)).tag(second)
-                        }
-                    }
-                    .pickerStyle(WheelPickerStyle())
-                    .frame(width: columnWidth, height: 60)  // ✅ Ensure valid width
-                    .clipped()
-                }
-            }
-            .frame(width: totalWidth)
-        }
-        .frame(height: 60)
-    }
+    WatchCreateView()
+        .environmentObject(TimerManager.shared)
+        .environmentObject(WatchConnectivityProvider.shared)
 }

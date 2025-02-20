@@ -18,7 +18,7 @@ struct TimerForm: View {
 
     var body: some View {
         Form {
-            Section(header: Text("Durations")) {
+            Section() {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Active Time")
                         .font(.subheadline)
@@ -34,7 +34,7 @@ struct TimerForm: View {
             }
 
             Section(header: Text("Rounds")) {
-                Stepper("Rounds: \(totalRounds == 0 ? "∞" : "\(totalRounds)")", value: $totalRounds, in: 0...100)
+                Stepper(totalRounds == 0 ? "∞" : "\(totalRounds)", value: $totalRounds, in: 0...100)
             }
 
             Section {
