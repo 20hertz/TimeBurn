@@ -1,6 +1,6 @@
 # TimeBurn
 
-TimeBurn is a cross-platform interval timer application for iOS and watchOS. It lets users create timers with custom active and rest durations, round counts, and optional infinite runs. Timers are synchronized between iOS and watchOS, ensuring that when a user starts, pauses, or resets a timer on one device, the other device remains in sync.
+TimeBurn is a cross-platform interval timer application for iOS and watchOS. It lets users create timers with custom active and rest durations, round counts. Timers are synchronized between iOS and watchOS, ensuring that when a user starts, pauses, or resets a timer on one device, the other device remains in sync.
 
 ---
 
@@ -108,9 +108,16 @@ Timers can be **started** and **controlled** on either device. Whichever device 
   - A compact watch-friendly row with a blue running indicator if `isRunning`.
 
 - **`WatchTimerView.swift`**
+
   - Displays the remaining time, round indicators, and play/pause/reset controls.
   - Background color changes to green/red for active/rest phases.
   - Also calls `applyAction(...)` for local user actions, ensuring any other running timer is reset on both devices.
+
+- **`WatchCreateView.swift`** Enables user to create timers directly on watch. This view offers a swipable interface to configure:
+  - **Round duration:** Using a custom time picker that starts at 05 seconds (to ensure a non-zero value).
+  - **Number of Rounds:** Includes an infinite option (displayed as "∞") along with finite round counts.
+  - **Rest Time:** Allows users to set rest time, including 0 seconds.
+  - **Sound Setting:** Toggle to enable or disable sound cues.
 
 ---
 
@@ -230,4 +237,3 @@ No ephemeral state is ever persisted; it’s all in memory.
 - SwiftUI-based views
 - Separate ephemeral logic (in-memory only) from persistent data.
 - Keep commit messages descriptive.
-- Thoroughly test on both iOS and watchOS.

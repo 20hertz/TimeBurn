@@ -5,11 +5,9 @@
 //  Created by Stéphane on 2025-01-27.
 //
 
-
 import SwiftUI
 
 struct TimerForm: View {
-    // Timer properties
     @Binding var name: String
     @Binding var activeDuration: Int
     @Binding var restDuration: Int
@@ -20,21 +18,24 @@ struct TimerForm: View {
         Form {
             Section() {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Active Time")
+                    Text("Round Duration")
                         .font(.subheadline)
                     DurationPicker(duration: $activeDuration)
-                        .frame(height: 150)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Rest Time")
-                        .font(.subheadline)
-                    DurationPicker(duration: $restDuration)
                         .frame(height: 150)
                 }
             }
 
             Section(header: Text("Rounds")) {
                 Stepper(totalRounds == 0 ? "∞" : "\(totalRounds)", value: $totalRounds, in: 0...100)
+            }
+            
+            Section() {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rest Time")
+                        .font(.subheadline)
+                    DurationPicker(duration: $restDuration)
+                        .frame(height: 150)
+                }
             }
 
             Section {

@@ -72,20 +72,14 @@ struct EditView: View {
     }
 
     private func saveChanges() {
-        // Validate inputs
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            alertMessage = "Timer name cannot be empty."
-            showingAlert = true
-            return
-        }
-
+        // Validate only activeDuration
         guard activeDuration > 0 else {
             alertMessage = "Active duration must be greater than zero."
             showingAlert = true
             return
         }
 
-        // Update the timer in TimerManager
+        // Update the timer in TimerManager. Note: Timer name can be empty.
         timerManager.updateTimer(
             timer,
             name: name,

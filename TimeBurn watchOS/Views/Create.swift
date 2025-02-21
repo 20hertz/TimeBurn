@@ -4,7 +4,6 @@
 //
 //  Created by Stéphane on 2025-02-10.
 //
-
 import SwiftUI
 
 struct WatchCreateView: View {
@@ -12,13 +11,13 @@ struct WatchCreateView: View {
     @EnvironmentObject var timerManager: TimerManager
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
 
-    // Timer settings with default seconds set to 5 so active duration is never 0.
+    // Timer settings with active seconds defaulting to 5 (active duration must be > 0).
     @State private var activeMinutes: Int = 0
     @State private var activeSeconds: Int = 5
-    // For rounds, 0 represents infinite rounds; 1 or higher means finite rounds.
+    // For rounds, 0 represents infinite; 1 or higher means finite rounds.
     @State private var numberOfRounds: Int = 1
     @State private var restMinutes: Int = 0
-    @State private var restSeconds: Int = 5
+    @State private var restSeconds: Int = 0   // Now rest seconds can be 0.
     @State private var enableSound: Bool = true
 
     // TabView page tracking
@@ -28,15 +27,15 @@ struct WatchCreateView: View {
     @State private var navigateToNewTimer: Bool = false
     @State private var newTimerID: UUID? = nil
 
-    // Computed durations
+    // Computed durations (in seconds)
     var activeDuration: Int { activeMinutes * 60 + activeSeconds }
     var restDuration: Int { restMinutes * 60 + restSeconds }
 
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Main content: swipable settings pages.
                 TabView(selection: $currentPage) {
+                    // Page 0: Active Duration
                     VStack {
                         Text("Round Duration")
                             .font(.headline)
@@ -47,6 +46,7 @@ struct WatchCreateView: View {
                     }
                     .tag(0)
                     
+                    // Page 1: Number of Rounds (with infinite option)
                     VStack {
                         Text("Number of Rounds")
                             .font(.headline)
@@ -72,34 +72,32 @@ struct WatchCreateView: View {
                     }
                     .tag(1)
                     
-                    // Page 2: Rest Duration (shown only if numberOfRounds is not exactly 1)
-                    if numberOfRounds != 1 {
-                        VStack {
-                            Text("Rest Time")
-                                .font(.headline)
-                                .padding(.top, 8)
-                            // For rest duration, allow zero seconds.
-                            TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
-                                .padding(.vertical)
-                            Spacer()
-                        }
-                        .tag(2)
+                    // Page 2: Rest Time (always visible, allowing 0 seconds)
+                    VStack {
+                        Text("Rest Time")
+                            .font(.headline)
+                            .padding(.top, 8)
+                        TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
+                            .padding(.vertical)
+                        Spacer()
                     }
+                    .tag(2)
                     
+                    // Page 3: Sound toggle
                     VStack {
                         Toggle("Enable Sound", isOn: $enableSound)
                             .toggleStyle(SwitchToggleStyle())
                             .padding()
                         Spacer()
                     }
-                    .tag(numberOfRounds == 1 ? 2 : 3)
+                    .tag(3)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
                 .animation(.default, value: numberOfRounds)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Top left cancel button
+                // Top left cancel button.
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
@@ -108,7 +106,7 @@ struct WatchCreateView: View {
                             .font(.headline)
                     }
                 }
-                // Top right save button styled with accentColor
+                // Top right save button styled with accentColor.
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         saveTimer()
@@ -144,8 +142,7 @@ struct WatchCreateView: View {
         timerManager.addTimer(
             name: "",
             activeDuration: activeDuration,
-            // If numberOfRounds is 1, restDuration is set to 0; otherwise use the chosen restDuration.
-            restDuration: numberOfRounds == 1 ? 0 : restDuration,
+            restDuration: restDuration,
             totalRounds: numberOfRounds,
             enableSound: enableSound
         )
@@ -157,7 +154,8 @@ struct WatchCreateView: View {
     }
 }
 
-// Helper view: TimePickerView with a parameter to allow 0 seconds.
+/// A custom time picker view that lets the user select minutes and seconds.
+/// The 'allowZero' parameter determines whether 0 seconds is a valid selection.
 struct TimePickerView: View {
     @Binding var minutes: Int
     @Binding var seconds: Int
@@ -165,6 +163,7 @@ struct TimePickerView: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            // Minutes picker.
             Picker("", selection: $minutes) {
                 ForEach(0..<60, id: \.self) { i in
                     Text("\(i)")
@@ -175,15 +174,15 @@ struct TimePickerView: View {
             }
             .frame(width: 70)
             .clipped()
-            
+
             Text(":")
                 .font(.system(size: 24, weight: .bold))
                 .padding(.horizontal, 4)
-            
+
+            // Seconds picker.
             if allowZero {
                 Picker("", selection: $seconds) {
-                    ForEach(0..<12, id: \.self) { i in
-                        let sec = i * 5
+                    ForEach(Array(stride(from: 0, through: 55, by: 5)), id: \.self) { sec in
                         Text(String(format: "%02d", sec))
                             .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
                             .foregroundColor(seconds == sec ? .primary : .gray)
@@ -194,8 +193,7 @@ struct TimePickerView: View {
                 .clipped()
             } else {
                 Picker("", selection: $seconds) {
-                    ForEach(1..<12, id: \.self) { i in
-                        let sec = i * 5
+                    ForEach(Array(stride(from: 5, through: 55, by: 5)), id: \.self) { sec in
                         Text(String(format: "%02d", sec))
                             .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
                             .foregroundColor(seconds == sec ? .primary : .gray)
