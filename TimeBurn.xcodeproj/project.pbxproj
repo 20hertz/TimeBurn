@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F4A362C82D68103600AD5C0C /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */; };
 		F4F26E732D2D82AB00AA8B3D /* TimeBurn watchOS.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F4F26E662D2D82A800AA8B3D /* TimeBurn watchOS.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F4F26E982D2D928300AA8B3D /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */; };
-		F4F26E9A2D2D928C00AA8B3D /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,7 +40,6 @@
 		F4F26E512D2D826200AA8B3D /* TimeBurn iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimeBurn iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4F26E662D2D82A800AA8B3D /* TimeBurn watchOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimeBurn watchOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
-		F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.1.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -74,7 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F4F26E9A2D2D928C00AA8B3D /* WatchConnectivity.framework in Frameworks */,
+				F4A362C82D68103600AD5C0C /* WatchConnectivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,7 +103,6 @@
 		F4F26E962D2D928200AA8B3D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F4F26E992D2D928C00AA8B3D /* WatchConnectivity.framework */,
 				F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */,
 			);
 			name = Frameworks;

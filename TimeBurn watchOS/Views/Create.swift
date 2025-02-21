@@ -4,6 +4,7 @@
 //
 //  Created by Stéphane on 2025-02-10.
 //
+
 import SwiftUI
 
 struct WatchCreateView: View {
@@ -36,9 +37,8 @@ struct WatchCreateView: View {
             VStack(spacing: 0) {
                 // Main content: swipable settings pages.
                 TabView(selection: $currentPage) {
-                    // Page 0: Active Duration
                     VStack {
-                        Text("Active Duration")
+                        Text("Round Duration")
                             .font(.headline)
                             .padding(.top, 8)
                         TimePickerView(minutes: $activeMinutes, seconds: $activeSeconds)
@@ -47,7 +47,6 @@ struct WatchCreateView: View {
                     }
                     .tag(0)
                     
-                    // Page 1: Number of Rounds (with infinite option)
                     VStack {
                         Text("Number of Rounds")
                             .font(.headline)
@@ -76,21 +75,18 @@ struct WatchCreateView: View {
                     // Page 2: Rest Duration (shown only if numberOfRounds is not exactly 1)
                     if numberOfRounds != 1 {
                         VStack {
-                            Text("Rest Duration")
+                            Text("Rest Time")
                                 .font(.headline)
                                 .padding(.top, 8)
-                            TimePickerView(minutes: $restMinutes, seconds: $restSeconds)
+                            // For rest duration, allow zero seconds.
+                            TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
                                 .padding(.vertical)
                             Spacer()
                         }
                         .tag(2)
                     }
                     
-                    // Page 3: Sound toggle
                     VStack {
-                        Text("Sound")
-                            .font(.headline)
-                            .padding(.top, 8)
                         Toggle("Enable Sound", isOn: $enableSound)
                             .toggleStyle(SwitchToggleStyle())
                             .padding()
@@ -112,13 +108,14 @@ struct WatchCreateView: View {
                             .font(.headline)
                     }
                 }
-                // Top right save button
+                // Top right save button styled with accentColor
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         saveTimer()
                     } label: {
                         Image(systemName: "checkmark")
                             .font(.headline)
+                            .foregroundColor(.accentColor)
                     }
                 }
             }
@@ -147,6 +144,7 @@ struct WatchCreateView: View {
         timerManager.addTimer(
             name: "",
             activeDuration: activeDuration,
+            // If numberOfRounds is 1, restDuration is set to 0; otherwise use the chosen restDuration.
             restDuration: numberOfRounds == 1 ? 0 : restDuration,
             totalRounds: numberOfRounds,
             enableSound: enableSound
@@ -159,10 +157,11 @@ struct WatchCreateView: View {
     }
 }
 
-// Helper view: TimePickerView with seconds starting at 05 seconds.
+// Helper view: TimePickerView with a parameter to allow 0 seconds.
 struct TimePickerView: View {
     @Binding var minutes: Int
     @Binding var seconds: Int
+    var allowZero: Bool = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -181,17 +180,31 @@ struct TimePickerView: View {
                 .font(.system(size: 24, weight: .bold))
                 .padding(.horizontal, 4)
             
-            Picker("", selection: $seconds) {
-                ForEach(1..<12, id: \.self) { i in
-                    let sec = i * 5
-                    Text(String(format: "%02d", sec))
-                        .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
-                        .foregroundColor(seconds == sec ? .primary : .gray)
-                        .tag(sec)
+            if allowZero {
+                Picker("", selection: $seconds) {
+                    ForEach(0..<12, id: \.self) { i in
+                        let sec = i * 5
+                        Text(String(format: "%02d", sec))
+                            .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
+                            .foregroundColor(seconds == sec ? .primary : .gray)
+                            .tag(sec)
+                    }
                 }
+                .frame(width: 70)
+                .clipped()
+            } else {
+                Picker("", selection: $seconds) {
+                    ForEach(1..<12, id: \.self) { i in
+                        let sec = i * 5
+                        Text(String(format: "%02d", sec))
+                            .font(.system(size: 24, weight: seconds == sec ? .bold : .regular))
+                            .foregroundColor(seconds == sec ? .primary : .gray)
+                            .tag(sec)
+                    }
+                }
+                .frame(width: 70)
+                .clipped()
             }
-            .frame(width: 70)
-            .clipped()
         }
         .labelsHidden()
     }

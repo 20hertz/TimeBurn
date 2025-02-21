@@ -39,15 +39,14 @@ class AudioManager {
     /// - Parameters:
     ///   - soundName: The name of the sound file (without extension).
     ///   - soundExtension: The extension of the sound file.
-    ///   - volume: The volume at which to play the sound (0.0 to 1.0). Default is 1.0.
-    func playSound(soundName: String, soundExtension: String = "aac", volume: Float = 1.0) {
+    func playSound(soundName: String, soundExtension: String = "aac") {
         guard let url = Bundle.main.url(forResource: soundName, withExtension: soundExtension) else {
             return
         }
         
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.volume = volume
+            audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
         } catch {
