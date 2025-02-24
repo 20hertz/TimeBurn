@@ -10,43 +10,23 @@ import SwiftUI
 struct WatchTimerView: View {
     @ObservedObject var engine: TimerEngine
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 12) {
-
-            Text(formatTime(from: engine.remainingTime))
-                .font(.system(.title, design: .monospaced))
-                .padding(.top, 20)
-            
-            roundIndicators()
-                .padding(.top, 8)
-            
+            timeDisplay
+            roundIndicators().padding(.top, 8)
             Spacer()
-            
-            // Controls: Reset (if started) and Play/Pause
-            HStack(spacing: 20) {
-                if engine.phase != .idle {
-                    Button {
-                        localApply(.reset)
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                    }
-                }
-                
-                Button {
-                    if engine.isRunning {
-                        localApply(.pause)
-                    } else {
-                        localApply(.play)
-                    }
-                } label: {
-                    Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.largeTitle)
-                }
-            }
-            .padding(.bottom, 20)
+            controlButtons
         }
         .background(backgroundColor)
+
+    }
+    
+    private var timeDisplay: some View {
+        Text(formatTime(from: engine.remainingTime))
+            .font(.system(.title, design: .monospaced))
+            .padding(.top, 20)
     }
     
     @ViewBuilder
@@ -63,6 +43,26 @@ struct WatchTimerView: View {
         }
     }
     
+    private var controlButtons: some View {
+        HStack(spacing: 20) {
+            if engine.phase != .idle {
+                Button(action: { localApply(.reset) }) {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+            }
+            
+            Button {
+                engine.isRunning ? localApply(.pause) : localApply(.play)
+            } label: {
+                Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.largeTitle)
+                    .foregroundColor(engine.phase == .idle ? .accentColor : .white)
+            }
+        }
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: Helper Methods
     private var backgroundColor: Color {
         switch engine.phase {
         case .active:
@@ -90,7 +90,6 @@ struct WatchTimerView: View {
         
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
-
 }
 
 #Preview {

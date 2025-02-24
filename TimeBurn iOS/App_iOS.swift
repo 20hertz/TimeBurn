@@ -19,7 +19,11 @@ struct App_iOS: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                HomeView()
+                if timerManager.timers.isEmpty {
+                    CreateView()
+                } else {
+                    HomeView()
+                }
             }
             .environmentObject(timerManager)
             .environmentObject(connectivityProvider)

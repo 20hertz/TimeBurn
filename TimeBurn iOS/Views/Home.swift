@@ -103,7 +103,7 @@ struct RowView: View {
                 Spacer()
                 if engine.isRunning {
                     Circle()
-                        .fill(Color.blue)
+                        .fill(Color.accentColor)
                         .frame(width: 8, height: 8)
                 }
             }

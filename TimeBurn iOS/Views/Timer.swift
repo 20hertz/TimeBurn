@@ -12,10 +12,22 @@ struct TimerView: View {
     @ObservedObject var engine: TimerEngine
     @Environment(\.dismiss) private var dismiss
 
+    // Computed property for button color based on timer phase.
+    private var currentButtonColor: Color {
+        switch engine.phase {
+        case .idle:
+            return Color.accentColor
+        case .active:
+            return Color.green
+        case .rest, .completed:
+            return Color.red
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
 
-            Text("REST")
+            Text("Rest")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.black)
                 .opacity(engine.phase == .rest ? 1.0 : 0.0)
@@ -25,7 +37,7 @@ struct TimerView: View {
                 CircularProgressBar(
                     progress: Double(progress),
                     remainingTime: engine.remainingTime,
-                    isResting: engine.phase == .rest
+                    color: currentButtonColor
                 )
                 .frame(width: geometry.size.width * 0.75,
                        height: geometry.size.width * 0.75)
@@ -35,16 +47,11 @@ struct TimerView: View {
 
             roundIndicator()
 
-            // Updated HStack for Buttons
             HStack {
                 // Left Side: Reset Button or Spacer
                 if engine.phase != .idle {
                     resetButton()
                         .frame(width: 60, height: 60)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.accentColor, lineWidth: 2)
-                        )
                         .clipShape(Circle())
                 } else {
                     Spacer()
@@ -53,12 +60,10 @@ struct TimerView: View {
 
                 Spacer()
 
-                // Center: Play/Pause Button
                 playPauseButton()
-                    .frame(width: 100, height: 100) // Increased size
-                    .background(Color.accentColor)
+                    .frame(width: 100, height: 100)
                     .clipShape(Circle())
-                    .shadow(radius: 5) // Optional: Add shadow for better visibility
+                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
 
                 Spacer()
 
@@ -69,7 +74,7 @@ struct TimerView: View {
                         .hidden() // Invisible to balance the HStack
                 } else {
                     Spacer()
-                        .frame(width: 60, height: 60) // Same width as resetButton
+                        .frame(width: 60, height: 60)
                 }
             }
             .padding(.horizontal, 40)
@@ -110,7 +115,7 @@ struct TimerView: View {
             HStack(spacing: 8) {
                 ForEach(0..<engine.timer.totalRounds, id: \.self) { index in
                     Circle()
-                        .fill(index < engine.currentRound ? Color.accentColor : Color.gray.opacity(0.5))
+                        .fill(index < engine.currentRound ? currentButtonColor : Color.gray.opacity(0.5))
                         .frame(width: 20, height: 20)
                 }
             }
@@ -119,12 +124,7 @@ struct TimerView: View {
 
     // MARK: - Helpers
     private var progress: CGFloat {
-        let totalDuration: CGFloat
-        if engine.phase == .rest {
-            totalDuration = CGFloat(engine.timer.restDuration)
-        } else {
-            totalDuration = CGFloat(engine.timer.activeDuration)
-        }
+        let totalDuration: CGFloat = (engine.phase == .rest) ? CGFloat(engine.timer.restDuration) : CGFloat(engine.timer.activeDuration)
         return min(CGFloat(engine.remainingTime) / totalDuration, 1)
     }
 
@@ -143,10 +143,7 @@ struct TimerView: View {
                 .padding(20)
                 .foregroundColor(.white)
         }
-        .frame(width: 100, height: 100) // Increased size
-        .background(Color.accentColor)
-        .clipShape(Circle())
-        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
+        .background(currentButtonColor)
         .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
         .accessibilityHint(engine.isRunning ? "Pauses the current timer." : "Starts the timer.")
     }
@@ -159,20 +156,23 @@ struct TimerView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .padding(15)
+                .foregroundColor(currentButtonColor)
         }
+        .overlay(
+            Circle()
+                .stroke(currentButtonColor, lineWidth: 2)
+        )
         .accessibilityLabel("Reset Timer")
         .accessibilityHint("Resets the current timer to its initial state.")
         .accessibilityHidden(engine.phase == .idle)
     }
 
     private func localApply(_ action: TimerAction) {
-        // 1) Build the local payload from the current engine state
         let eventTimestamp = Date()
         let payloadRemainingTime = engine.remainingTime
         let payloadIsRest = (engine.phase == .rest)
         let payloadCurrentRound = engine.currentRound
 
-        // 2) Locally apply the action so we do “reset others + play/pause/etc.” all in applyAction
         engine.applyAction(
             action,
             eventTimestamp: eventTimestamp,
@@ -181,7 +181,6 @@ struct TimerView: View {
             payloadCurrentRound: payloadCurrentRound
         )
 
-        // 3) Send the action across to the other device
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
 }
