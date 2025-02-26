@@ -49,10 +49,9 @@ struct TimerView: View {
 
             HStack {
                 // Left Side: Reset Button or Spacer
-                if engine.phase != .idle {
+                if engine.phase != .idle && engine.phase != .completed {
                     resetButton()
                         .frame(width: 60, height: 60)
-                        .clipShape(Circle())
                 } else {
                     Spacer()
                         .frame(width: 60, height: 60) // Maintain alignment when resetButton is hidden
@@ -60,9 +59,9 @@ struct TimerView: View {
 
                 Spacer()
 
+                // Center: Play/Pause or Reset button when completed
                 playPauseButton()
                     .frame(width: 100, height: 100)
-                    .clipShape(Circle())
                     .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
 
                 Spacer()
@@ -124,44 +123,72 @@ struct TimerView: View {
 
     // MARK: - Helpers
     private var progress: CGFloat {
-        let totalDuration: CGFloat = (engine.phase == .rest) ? CGFloat(engine.timer.restDuration) : CGFloat(engine.timer.activeDuration)
+        let totalDuration: CGFloat = (engine.phase == .rest)
+            ? CGFloat(engine.timer.restDuration)
+            : CGFloat(engine.timer.activeDuration)
         return min(CGFloat(engine.remainingTime) / totalDuration, 1)
     }
 
     // MARK: - Buttons
     private func playPauseButton() -> some View {
-        Button {
-            if engine.isRunning {
-                localApply(.pause)
-            } else {
-                localApply(.play)
-            }
-        } label: {
-            Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .padding(20)
-                .foregroundColor(.white)
+        if engine.phase == .completed {
+            // When completed, show reset button instead (with a ZStack to avoid clipping).
+            return AnyView(
+                Button {
+                    localApply(.reset)
+                } label: {
+                    ZStack {
+                        Circle()
+                            .foregroundColor(currentButtonColor)
+                        Image(systemName: "arrow.counterclockwise.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(15)
+                            .foregroundColor(.white)
+                    }
+                }
+                .accessibilityLabel("Reset Timer")
+                .accessibilityHint("Resets the timer to its initial state.")
+            )
+        } else {
+            return AnyView(
+                Button {
+                    if engine.isRunning {
+                        localApply(.pause)
+                    } else {
+                        localApply(.play)
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .foregroundColor(currentButtonColor)
+                        Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(20)
+                            .foregroundColor(.white)
+                    }
+                }
+                .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
+                .accessibilityHint(engine.isRunning ? "Pauses the timer." : "Starts the timer.")
+            )
         }
-        .background(currentButtonColor)
-        .accessibilityLabel(engine.isRunning ? "Pause Timer" : "Play Timer")
-        .accessibilityHint(engine.isRunning ? "Pauses the current timer." : "Starts the timer.")
     }
 
     private func resetButton() -> some View {
         Button {
             localApply(.reset)
         } label: {
-            Image(systemName: "arrow.counterclockwise")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .padding(15)
-                .foregroundColor(currentButtonColor)
+            ZStack {
+                Circle()
+                    .stroke(currentButtonColor, lineWidth: 2)
+                Image(systemName: "arrow.counterclockwise")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(15)
+                    .foregroundColor(currentButtonColor)
+            }
         }
-        .overlay(
-            Circle()
-                .stroke(currentButtonColor, lineWidth: 2)
-        )
         .accessibilityLabel("Reset Timer")
         .accessibilityHint("Resets the current timer to its initial state.")
         .accessibilityHidden(engine.phase == .idle)
