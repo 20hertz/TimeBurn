@@ -6,11 +6,14 @@
 //
 
 import SwiftUI
+import WatchKit
 
 struct WatchTimerView: View {
     @ObservedObject var engine: TimerEngine
     @EnvironmentObject var connectivityProvider: WatchConnectivityProvider
     @Environment(\.dismiss) private var dismiss
+
+    @State private var lastPhase: TimerEngine.Phase = .idle
 
     var body: some View {
         VStack(spacing: 12) {
@@ -20,7 +23,14 @@ struct WatchTimerView: View {
             controlButtons
         }
         .background(backgroundColor)
-
+        .onChange(of: engine.phase) { newPhase in
+            if newPhase == .active && lastPhase != .active {
+                WKInterfaceDevice.current().play(.success)
+            } else if newPhase == .rest && lastPhase != .rest {
+                WKInterfaceDevice.current().play(.failure)
+            }
+            lastPhase = newPhase
+        }
     }
     
     private var timeDisplay: some View {
@@ -44,25 +54,48 @@ struct WatchTimerView: View {
     }
     
     private var controlButtons: some View {
-        HStack(spacing: 20) {
-            if engine.phase != .idle {
-                Button(action: { localApply(.reset) }) {
-                    Image(systemName: "arrow.counterclockwise")
+        if engine.phase == .completed {
+            // When completed, show a centered reset button.
+            return AnyView(
+                Button {
+                    localApply(.reset)
+                } label: {
+                    ZStack {
+                        Circle()
+                            .foregroundColor(currentButtonColor)
+                        Image(systemName: "arrow.counterclockwise.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(15)
+                            .foregroundColor(.white)
+                    }
                 }
-            }
-            
-            Button {
-                engine.isRunning ? localApply(.pause) : localApply(.play)
-            } label: {
-                Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.largeTitle)
-                    .foregroundColor(engine.phase == .idle ? .accentColor : .white)
-            }
+                .frame(width: 100, height: 100)
+                .padding(.bottom, 20)
+            )
+        } else {
+            return AnyView(
+                HStack(spacing: 20) {
+                    if engine.phase != .idle {
+                        Button(action: { localApply(.reset) }) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .foregroundColor(engine.phase == .completed ? .accentColor : .white)
+                        }
+                    }
+                    
+                    Button {
+                        engine.isRunning ? localApply(.pause) : localApply(.play)
+                    } label: {
+                        Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.largeTitle)
+                            .foregroundColor(engine.phase == .idle ? .accentColor : .white)
+                    }
+                }
+                .padding(.bottom, 20)
+            )
         }
-        .padding(.bottom, 20)
     }
     
-    // MARK: Helper Methods
     private var backgroundColor: Color {
         switch engine.phase {
         case .active:
@@ -74,12 +107,23 @@ struct WatchTimerView: View {
         }
     }
     
+    private var currentButtonColor: Color {
+        switch engine.phase {
+        case .idle:
+            return .accentColor
+        case .active:
+            return .green
+        case .rest, .completed:
+            return .red
+        }
+    }
+    
     private func localApply(_ action: TimerAction) {
         let eventTimestamp = Date()
         let payloadRemainingTime = engine.remainingTime
         let payloadIsRest = (engine.phase == .rest)
         let payloadCurrentRound = engine.currentRound
-        
+
         engine.applyAction(
             action,
             eventTimestamp: eventTimestamp,
@@ -87,7 +131,7 @@ struct WatchTimerView: View {
             payloadIsRest: payloadIsRest,
             payloadCurrentRound: payloadCurrentRound
         )
-        
+
         connectivityProvider.sendAction(timerID: engine.timer.id, action: action)
     }
 }
