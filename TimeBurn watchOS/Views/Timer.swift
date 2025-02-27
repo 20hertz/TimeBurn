@@ -54,46 +54,25 @@ struct WatchTimerView: View {
     }
     
     private var controlButtons: some View {
-        if engine.phase == .completed {
-            // When completed, show a centered reset button.
-            return AnyView(
+        HStack(spacing: 20) {
+            if engine.phase != .idle {
+                Button(action: { localApply(.reset) }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .foregroundColor(engine.phase == .completed ? .accentColor : .white)
+                }
+            }
+            if engine.phase != .completed {
                 Button {
-                    localApply(.reset)
+                    engine.isRunning ? localApply(.pause) : localApply(.play)
                 } label: {
-                    ZStack {
-                        Circle()
-                            .foregroundColor(currentButtonColor)
-                        Image(systemName: "arrow.counterclockwise.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .padding(15)
-                            .foregroundColor(.white)
-                    }
+                    Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(engine.phase == .idle ? .accentColor : .white)
                 }
-                .frame(width: 100, height: 100)
-                .padding(.bottom, 20)
-            )
-        } else {
-            return AnyView(
-                HStack(spacing: 20) {
-                    if engine.phase != .idle {
-                        Button(action: { localApply(.reset) }) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .foregroundColor(engine.phase == .completed ? .accentColor : .white)
-                        }
-                    }
-                    
-                    Button {
-                        engine.isRunning ? localApply(.pause) : localApply(.play)
-                    } label: {
-                        Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.largeTitle)
-                            .foregroundColor(engine.phase == .idle ? .accentColor : .white)
-                    }
-                }
-                .padding(.bottom, 20)
-            )
+            }
         }
+        .padding(.bottom, 20)
+            
     }
     
     private var backgroundColor: Color {

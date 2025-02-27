@@ -18,7 +18,7 @@ struct WatchCreateView: View {
     // For rounds, 0 represents infinite; 1 or higher means finite rounds.
     @State private var numberOfRounds: Int = 1
     @State private var restMinutes: Int = 0
-    @State private var restSeconds: Int = 0   // Now rest seconds can be 0.
+    @State private var restSeconds: Int = 0   // Rest seconds can be 0.
     @State private var enableSound: Bool = true
 
     // TabView page tracking
@@ -35,6 +35,29 @@ struct WatchCreateView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Custom header replaces the system navigation bar.
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    Button {
+                        saveTimer()
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(.headline)
+                            .foregroundColor(.accentColor)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.black) // Or another custom background color for your header.
+
+                // Main content: swipable settings pages.
                 TabView(selection: $currentPage) {
                     // Page 0: Active Duration
                     VStack {
@@ -96,28 +119,7 @@ struct WatchCreateView: View {
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
                 .animation(.default, value: numberOfRounds)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // Top left cancel button.
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.headline)
-                    }
-                }
-                // Top right save button styled with accentColor.
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        saveTimer()
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .font(.headline)
-                            .foregroundColor(.accentColor)
-                    }
-                }
-            }
+            .navigationBarHidden(true) // Hide the default navigation bar (and system clock)
             // Hidden NavigationLink to push to the new timer's view upon saving.
             .background(
                 NavigationLink(destination: destinationForNewTimer(), isActive: $navigateToNewTimer) {
