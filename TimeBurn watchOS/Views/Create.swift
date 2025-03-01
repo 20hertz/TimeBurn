@@ -55,7 +55,7 @@ struct WatchCreateView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.black) // Or another custom background color for your header.
+                .background(Color.black)
 
                 // Main content: swipable settings pages.
                 TabView(selection: $currentPage) {
@@ -96,25 +96,36 @@ struct WatchCreateView: View {
                     }
                     .tag(1)
                     
-                    // Page 2: Rest Time (always visible, allowing 0 seconds)
-                    VStack {
-                        Text("Rest Time")
-                            .font(.headline)
-                            .padding(.top, 8)
-                        TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
-                            .padding(.vertical)
-                        Spacer()
+                    if numberOfRounds != 1 {
+                        // Page 2: Rest Time (shown only if rounds != 1)
+                        VStack {
+                            Text("Rest Time")
+                                .font(.headline)
+                                .padding(.top, 8)
+                            TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
+                                .padding(.vertical)
+                            Spacer()
+                        }
+                        .tag(2)
+                        
+                        // Page 3: Sound toggle
+                        VStack {
+                            Toggle("Enable Sound", isOn: $enableSound)
+                                .toggleStyle(SwitchToggleStyle())
+                                .padding()
+                            Spacer()
+                        }
+                        .tag(3)
+                    } else {
+                        // When numberOfRounds == 1, skip Rest Time and show Sound toggle as page 2.
+                        VStack {
+                            Toggle("Enable Sound", isOn: $enableSound)
+                                .toggleStyle(SwitchToggleStyle())
+                                .padding()
+                            Spacer()
+                        }
+                        .tag(2)
                     }
-                    .tag(2)
-                    
-                    // Page 3: Sound toggle
-                    VStack {
-                        Toggle("Enable Sound", isOn: $enableSound)
-                            .toggleStyle(SwitchToggleStyle())
-                            .padding()
-                        Spacer()
-                    }
-                    .tag(3)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
                 .animation(.default, value: numberOfRounds)
@@ -177,6 +188,7 @@ struct TimePickerView: View {
             }
             .frame(width: 70)
             .clipped()
+            .accentColor(Color.accentColor)
 
             Text(":")
                 .font(.system(size: 24, weight: .bold))
@@ -194,6 +206,7 @@ struct TimePickerView: View {
                 }
                 .frame(width: 70)
                 .clipped()
+                .accentColor(Color.accentColor)
             } else {
                 Picker("", selection: $seconds) {
                     ForEach(Array(stride(from: 5, through: 55, by: 5)), id: \.self) { sec in
@@ -205,6 +218,7 @@ struct TimePickerView: View {
                 }
                 .frame(width: 70)
                 .clipped()
+                .accentColor(Color.accentColor)
             }
         }
         .labelsHidden()
