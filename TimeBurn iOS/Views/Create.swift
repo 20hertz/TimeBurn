@@ -4,7 +4,6 @@
 //
 //  Created by Stéphane on 2025-01-13.
 //
-
 import SwiftUI
 
 struct CreateView: View {
@@ -17,34 +16,53 @@ struct CreateView: View {
     @State private var restDuration: Int = 30
     @State private var totalRounds: Int = 0
     @State private var enableSound: Bool = true
+    
+    // New state variable for navigation after saving
+    @State private var navigateToNewTimer: Bool = false
 
     var body: some View {
-        TimerForm(
-            name: $name,
-            activeDuration: $activeDuration,
-            restDuration: $restDuration,
-            totalRounds: $totalRounds,
-            enableSound: $enableSound
-        )
-        .navigationTitle("Create Timer")
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
+        NavigationStack {
+            VStack {
+                TimerForm(
+                    name: $name,
+                    activeDuration: $activeDuration,
+                    restDuration: $restDuration,
+                    totalRounds: $totalRounds,
+                    enableSound: $enableSound
+                )
+                .navigationTitle("Create Timer")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "chevron.left")
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            saveTimer()
+                        }
+                    }
                 }
             }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    saveTimer()
-                }
+            .navigationDestination(isPresented: $navigateToNewTimer) {
+                destinationForNewTimer()
             }
         }
     }
 
+    private func destinationForNewTimer() -> some View {
+        // Assuming the newly created timer is the last element in the timers array.
+        if let newTimer = timerManager.timers.last {
+            let engine = ActiveTimerEngines.shared.engine(for: newTimer)
+            return AnyView(TimerView(engine: engine))
+        } else {
+            return AnyView(Text("Timer not found"))
+        }
+    }
 
     private func saveTimer() {
         timerManager.addTimer(
@@ -55,13 +73,14 @@ struct CreateView: View {
             enableSound: enableSound
         )
         connectivityProvider.sendTimers(timerManager.timers)
-        dismiss()
+        if timerManager.timers.last != nil {
+            navigateToNewTimer = true
+        }
     }
 }
 
-
 #Preview {
-    NavigationView {
+    NavigationStack {
         CreateView()
             .environmentObject(TimerManager.shared)
             .environmentObject(WatchConnectivityProvider.shared)
