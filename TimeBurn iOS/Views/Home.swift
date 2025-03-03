@@ -73,7 +73,6 @@ struct HomeView: View {
         connectivityProvider.sendTimers(timerManager.timers)
     }
 }
-
 struct RowView: View {
     let timer: IntervalTimer
     @ObservedObject var engine: TimerEngine
@@ -81,24 +80,23 @@ struct RowView: View {
     var body: some View {
         NavigationLink(destination: TimerView(engine: engine)) {
             HStack {
-                VStack(alignment: .leading) {
-                    // Compute the configuration string once.
-                    let configText = "\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))"
-                    // Check if the timer has a non-empty name.
-                    let hasName = !timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    
-                    // Headline: Use the timer name if available; otherwise, use the config text.
-                    Text(hasName ? timer.name : configText)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    
-                    // Caption: Always render the config text,
-                    // but if there's no name, set opacity to 0 to reserve layout space.
+                if timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // Timer has no name; display the configuration text aligned to the left,
+                    // but still centered vertically within the fixed row height.
                     Text(configText)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .opacity(hasName ? 1 : 0)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                } else {
+                    // Timer has a name; display the name and the config text.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(timer.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Text(configText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 if engine.isRunning {
@@ -108,7 +106,13 @@ struct RowView: View {
                 }
             }
             .padding(.vertical, 4)
+            // Set a fixed row height so that all rows are consistent.
+            .frame(height: 50)
         }
+    }
+    
+    private var configText: String {
+        "\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))"
     }
 }
 
