@@ -73,6 +73,7 @@ struct HomeView: View {
         connectivityProvider.sendTimers(timerManager.timers)
     }
 }
+
 struct RowView: View {
     let timer: IntervalTimer
     @ObservedObject var engine: TimerEngine
@@ -81,19 +82,18 @@ struct RowView: View {
         NavigationLink(destination: TimerView(engine: engine)) {
             HStack {
                 if timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    // Timer has no name; display the configuration text aligned to the left,
-                    // but still centered vertically within the fixed row height.
-                    Text(configText)
+                    // When there is no name, display the configuration text left-aligned but centered vertically.
+                    Text(timer.configurationText)
                         .font(.headline)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 } else {
-                    // Timer has a name; display the name and the config text.
+                    // Display timer name on top and configuration text as a caption.
                     VStack(alignment: .leading, spacing: 2) {
                         Text(timer.name)
                             .font(.headline)
                             .lineLimit(1)
                             .truncationMode(.tail)
-                        Text(configText)
+                        Text(timer.configurationText)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -106,13 +106,8 @@ struct RowView: View {
                 }
             }
             .padding(.vertical, 4)
-            // Set a fixed row height so that all rows are consistent.
             .frame(height: 50)
         }
-    }
-    
-    private var configText: String {
-        "\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))"
     }
 }
 

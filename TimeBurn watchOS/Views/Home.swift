@@ -77,14 +77,14 @@ struct RowView: View {
                 VStack(alignment: .leading) {
                     if timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         // No name provided – show the configuration string as headline.
-                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                        Text(timer.configurationText)
                             .font(.headline)
                     } else {
                         Text(timer.name)
                             .font(.headline)
                             .lineLimit(1)
                             .truncationMode(.tail)
-                        Text("\(timer.totalRounds == 0 ? "∞" : "\(timer.totalRounds)") x \(formatTime(from: timer.activeDuration)) | \(formatTime(from: timer.restDuration))")
+                        Text(timer.configurationText)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
