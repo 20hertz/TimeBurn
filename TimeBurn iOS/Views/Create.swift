@@ -4,6 +4,7 @@
 //
 //  Created by Stéphane on 2025-01-13.
 //
+
 import SwiftUI
 
 struct CreateView: View {
@@ -19,6 +20,9 @@ struct CreateView: View {
     
     // New state variable for navigation after saving
     @State private var navigateToNewTimer: Bool = false
+    
+    // State variable for showing an alert if activeDuration is 0
+    @State private var showAlert: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -51,6 +55,11 @@ struct CreateView: View {
             .navigationDestination(isPresented: $navigateToNewTimer) {
                 destinationForNewTimer()
             }
+            .alert("Invalid Timer", isPresented: $showAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Active duration must be greater than 0:00.")
+            }
         }
     }
 
@@ -65,6 +74,12 @@ struct CreateView: View {
     }
 
     private func saveTimer() {
+        // If active duration is 0, show alert instead of saving.
+        guard activeDuration > 0 else {
+            showAlert = true
+            return
+        }
+        
         timerManager.addTimer(
             name: name,
             activeDuration: activeDuration,

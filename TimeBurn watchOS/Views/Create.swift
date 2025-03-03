@@ -64,6 +64,7 @@ struct WatchCreateView: View {
                         Text("Round Duration")
                             .font(.headline)
                             .padding(.top, 8)
+                        // For active time, we do not allow zero seconds.
                         TimePickerView(minutes: $activeMinutes, seconds: $activeSeconds)
                             .padding(.vertical)
                         Spacer()
@@ -102,6 +103,7 @@ struct WatchCreateView: View {
                             Text("Rest Time")
                                 .font(.headline)
                                 .padding(.top, 8)
+                            // For rest time, we allow zero seconds.
                             TimePickerView(minutes: $restMinutes, seconds: $restSeconds, allowZero: true)
                                 .padding(.vertical)
                             Spacer()
@@ -131,7 +133,7 @@ struct WatchCreateView: View {
                 .animation(.default, value: numberOfRounds)
             }
             .navigationBarHidden(true) // Hide the default navigation bar (and system clock)
-            // Hidden NavigationLink to push to the new timer's view upon saving.
+            // Navigation to new timer view when saving.
             .background(
                 NavigationLink(destination: destinationForNewTimer(), isActive: $navigateToNewTimer) {
                     EmptyView()
@@ -153,6 +155,12 @@ struct WatchCreateView: View {
     }
     
     private func saveTimer() {
+        // Prevent saving a timer with 0:00 active duration.
+        guard activeDuration > 0 else {
+            // Optionally, you could show an alert here.
+            return
+        }
+        
         timerManager.addTimer(
             name: "",
             activeDuration: activeDuration,
