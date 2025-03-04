@@ -74,12 +74,14 @@ struct RowView: View {
     var body: some View {
         NavigationLink(destination: WatchTimerView(engine: engine)) {
             HStack {
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
                     if timer.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        // No name provided – show the configuration string as headline.
+                        // When no name is provided, show the configuration text.
                         Text(timer.configurationText)
                             .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
+                        // Display timer name and configuration text.
                         Text(timer.name)
                             .font(.headline)
                             .lineLimit(1)
@@ -92,11 +94,12 @@ struct RowView: View {
                 Spacer()
                 if engine.isRunning {
                     Circle()
-                        .fill(Color.blue)
+                        .fill(Color.accentColor)
                         .frame(width: 6, height: 6)
                 }
             }
             .padding(.vertical, 4)
+            .frame(height: 50) // Fixed row height
         }
     }
 }
