@@ -1,239 +1,193 @@
 # TimeBurn
 
-TimeBurn is a cross-platform interval timer application for iOS and watchOS. It lets users create timers with custom active and rest durations, round counts. Timers are synchronized between iOS and watchOS, ensuring that when a user starts, pauses, or resets a timer on one device, the other device remains in sync.
+TimeBurn is a cross-platform interval timer application for iOS and watchOS designed for fitness professionals and gym owners. It allows users to create, edit, and run interval timers with customizable active/rest durations, round counts (including infinite rounds), and optional bell sound cues. The app synchronizes timers between iOS and watchOS devices using a lead device pattern to ensure minimal latency and consistent state.
+
+This README.md is written to provide a comprehensive overview of the project’s architecture, data flow, key components, and coding conventions so that a new AI coding assistant can hit the ground running with this project.
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Project Structure](#project-structure)  
-   2.1 [Shared Codebase](#shared-codebase)  
-   2.2 [iOS Components](#ios-components)  
-   2.3 [watchOS Components](#watchos-components)
-3. [Data Flow](#data-flow)
-4. [Synchronization Logic](#synchronization-logic)
-5. [TimerEngine Details](#timerengine-details)
-6. [Creating and Editing Timers](#creating-and-editing-timers)
-7. [User Interface Highlights](#user-interface-highlights)
+2. [Project Structure](#project-structure)
+   - [Shared Codebase](#shared-codebase)
+   - [iOS Components](#ios-components)
+   - [watchOS Components](#watchos-components)
+3. [Data Flow and Synchronization](#data-flow-and-synchronization)
+4. [TimerEngine Details](#timerengine-details)
+5. [Creating and Editing Timers](#creating-and-editing-timers)
+6. [User Interface Highlights](#user-interface-highlights)
+7. [Code Style and Conventions](#code-style-and-conventions)
+8. [Additional Notes](#additional-notes)
 
 ---
 
 ## 1. Overview
 
-TimeBurn is designed around a **separation of concerns**:
+TimeBurn is built on a clear separation of concerns:
 
-- **`TimerManager`** manages permanent timer configurations (name, active/rest durations, round counts), storing them in an App Group for sharing between iOS and watchOS.
-- **`TimerEngine`** manages ephemeral countdown details (remaining time, current round, active vs. rest phase), never persisting these to disk.
-- **`WatchConnectivityProvider`** synchronizes user actions (play, pause, reset) between devices, ensuring minimal latency and consistent ephemeral state.
-
-Timers can be **started** and **controlled** on either device. Whichever device initiates an action is the “Lead Device,” immediately applying the action locally, then notifying the other device to stay in sync.
+- **Persistent Configuration:** Managed by `TimerManager` and stored in an App Group, the permanent settings (timer name, active duration, rest duration, round count, and sound setting) are maintained across sessions.
+- **Ephemeral State:** Managed by `TimerEngine`, which handles countdowns, phase transitions (idle, active, rest, completed), and round management in memory.
+- **Synchronization:** The `WatchConnectivityProvider` handles data transfer between iOS and watchOS. When a user performs an action on one device, that device becomes the "lead device" and immediately applies the action locally, then sends the change to the other device for synchronization.
 
 ---
 
 ## 2. Project Structure
 
-### 2.1 Shared Codebase
+### Shared Codebase
 
-- **`IntervalTimer.swift`**  
-  A plain model type (`Identifiable`, `Codable`, `Equatable`, `Hashable`) that stores the permanent settings of an interval timer:
+- **IntervalTimer.swift**  
+  Defines the `IntervalTimer` model (conforming to `Identifiable`, `Codable`, `Equatable`, and `Hashable`), which stores the timer's permanent settings.
 
-  - `name`, `activeDuration`, `restDuration`, `totalRounds`
+- **TimerAction.swift**  
+  An enum representing user actions: `.play`, `.pause`, and `.reset`.
 
-- **`TimerAction.swift`**  
-  An enum (`.play`, `.pause`, `.reset`) representing user actions.
+- **TimerManager.swift**  
+  A singleton that manages a list of `IntervalTimer` configurations. It provides CRUD operations and persists data via an App Group.
 
-- **`TimerManager.swift`**
+- **TimerEngine.swift**  
+  Manages the ephemeral countdown state for an interval timer, including the remaining time, current round, and current phase. It implements methods such as `play()`, `pause()`, `reset()`, `advancePeriod()`, and `nextRound()`.
 
-  - A singleton (`TimerManager.shared`) that persists timers to an App Group (`group.com.slo.TimeBurn`).
-  - Offers CRUD operations for adding, updating, and deleting timers.
+- **ActiveTimerEngines.swift**  
+  Provides a global store of `TimerEngine` instances, ensuring that each timer configuration is associated with a unique engine.
 
-- **`TimerEngine.swift`**
+- **WatchConnectivityProvider.swift**  
+  Manages data transfer over `WCSession`, sending and receiving full timer lists as well as action events (play, pause, reset) between iOS and watchOS.
 
-  - Maintains ephemeral countdown state (`remainingTime`, `currentRound`, `phase`).
-  - Provides methods for `play()`, `pause()`, `reset()`, and transitions between active/rest phases.
-  - Implements “lead device” logic by resetting any other running timers (optional) before playing a new one if desired.
+- **Utilities**  
+  Contains helper functions such as `formatTime(from:)` and an extension on `IntervalTimer` that generates a `configurationText` string for display in timer rows. This helps DRY up the code and maintain consistency across views.
 
-- **`ActiveTimerEngines.swift`**
+### iOS Components
 
-  - A global store returning a unique `TimerEngine` instance per timer’s UUID.
+- **App_iOS.swift**  
+  The entry point for the iOS app, which sets up the environment with shared objects like `TimerManager`, `WatchConnectivityProvider`, and `NavigationCoordinator`.
 
-- **`WatchConnectivityProvider.swift`**
-  - Manages data transfer over `WCSession`.
-  - Sends/receives action events (`.play`, `.pause`, `.reset`) and full timer lists between iOS and watchOS.
+- **HomeView.swift**  
+  Displays a list of timers (using `RowView`) or a placeholder when no timers exist. A “+” button in the toolbar navigates to `CreateView`.
 
-### 2.2 iOS Components
+- **RowView.swift**  
+  Displays a single timer’s name (or, if empty, its configuration text) and a small indicator if the timer is running. Row height is fixed for consistency.
 
-- **`TimerApp_iOS.swift`**
+- **TimerView.swift**  
+  Shows the countdown (with a circular progress bar), round indicators, and control buttons (Play/Pause, Reset). It also provides navigation to an edit screen.
 
-  - Application entry point for iOS.
-  - Injects `TimerManager` and `WatchConnectivityProvider` as environment objects.
+- **CreateView.swift**  
+  Presents a form (using `TimerForm`) for creating a new timer. It validates that the active duration is greater than 0:00 (showing an alert if not) and, upon saving, navigates directly to the newly created timer’s view.
 
-- **`HomeView.swift`**
+- **EditView.swift**  
+  Similar to CreateView but pre-populated with an existing timer’s configuration for editing. It also validates that the active duration is greater than 0:00.
 
-  - Displays a list of timers or a placeholder if empty.
-  - Allows creation of new timers via a “+” button.
+### watchOS Components
 
-- **`RowView.swift`**
+- **App_watchOS.swift**  
+  The entry point for the watchOS app, which injects shared objects into the view hierarchy and starts the WatchConnectivity session.
 
-  - A single row showing timer name and a brief configuration.
-  - Displays a small blue dot if the associated `TimerEngine.isRunning`.
+- **WatchHomeView.swift**  
+  Lists timers or shows a placeholder if none exist. It uses a toolbar button for navigating to `WatchCreateView` and supports navigation to `WatchTimerView`.
 
-- **`TimerView.swift`**
+- **RowView.swift**  
+  A compact version of the timer row, optimized for the watch, showing the timer's name (or configuration text) and a running indicator.
 
-  - Shows the current countdown, round indicators, and main controls (Reset, Play/Pause).
-  - Circular progress UI for active/rest durations.
-  - Uses `applyAction(...)` for user actions so any other running timer can be reset if needed.
+- **WatchTimerView.swift**  
+  Displays a large, monospaced countdown, round indicators, and control buttons (Play/Pause, Reset). It changes background colors based on the timer phase and provides haptic feedback for phase transitions.
 
-- **`EditView.swift`**
-
-  - Edits an existing timer’s name/durations/round counts.
-
-- **`CreateView.swift`**
-  - Gathers data for a new timer using a wheel-based duration picker.
-  - Saves to `TimerManager`.
-
-### 2.3 watchOS Components
-
-- **`TimerApp_watchOS.swift`**
-
-  - Application entry point on watchOS, similarly providing environment objects.
-
-- **`WatchHomeView.swift`**
-
-  - Lists timers or displays a placeholder if none exist.
-
-- **`RowView.swift`**
-
-  - A compact watch-friendly row with a blue running indicator if `isRunning`.
-
-- **`WatchTimerView.swift`**
-
-  - Displays the remaining time, round indicators, and play/pause/reset controls.
-  - Background color changes to green/red for active/rest phases.
-  - Also calls `applyAction(...)` for local user actions, ensuring any other running timer is reset on both devices.
-
-- **`WatchCreateView.swift`** Enables user to create timers directly on watch. This view offers a swipable interface to configure:
-  - **Round duration:** Using a custom time picker that starts at 05 seconds (to ensure a non-zero value).
-  - **Number of Rounds:** Includes an infinite option (displayed as "∞") along with finite round counts.
-  - **Rest Time:** Allows users to set rest time, including 0 seconds.
-  - **Sound Setting:** Toggle to enable or disable sound cues.
+- **WatchCreateView.swift**  
+  Provides a swipable interface for creating a new timer directly on the watch. It allows configuration of round duration (active time), number of rounds (with an infinite option), rest time (which is hidden if rounds equal 1), and sound settings.
 
 ---
 
-## 3. Data Flow
+## 3. Data Flow and Synchronization
 
-1. **Creation/Editing**
+- **Creation/Editing:**  
+  Timers are created or edited via CreateView/EditView on iOS (or WatchCreateView on watchOS). The changes are saved to `TimerManager` and persisted using App Groups.
 
-   - iOS `CreateView` or `EditView` modifies timers in `TimerManager`.
-   - The watch is informed via `WatchConnectivityProvider.sendTimers(...)`.
+- **Selection:**  
+  When a timer is selected, its corresponding `TimerEngine` is obtained from `ActiveTimerEngines` and used to drive the countdown display in TimerView/WatchTimerView.
 
-2. **Selection**
+- **Action Events:**  
+  Actions such as play, pause, and reset are immediately applied on the lead device by calling `applyAction(...)` on TimerEngine. The action, along with a snapshot of ephemeral state, is then sent via WatchConnectivityProvider to the paired device for synchronization.
 
-   - Tapping a timer row obtains its `TimerEngine` from `ActiveTimerEngines`.
-   - The user navigates to `TimerView` or `WatchTimerView`.
-
-3. **Actions** (Play/Pause/Reset)
-   - The local device applies the action immediately (the “Lead Device” approach) via `applyAction(...)`.
-   - It sends an action event to the other device with the ephemeral snapshot.
-   - The other device applies the same action, synchronizing the countdown.
+- **Lead Device Pattern:**  
+  The device that initiates an action becomes the “lead device” and updates its state immediately. The paired device applies the same action based on the received snapshot to stay in sync.
 
 ---
 
-## 4. Synchronization Logic
+## 4. TimerEngine Details
 
-**WatchConnectivity** handles two primary data paths:
+- **Phases:**
 
-1. **Full Timer List**
+  - **idle:** Timer is not started or has been reset.
+  - **active:** Timer is counting down the active period.
+  - **rest:** Timer is counting down the rest period.
+  - **completed:** All rounds have been finished.
 
-   - Syncs the entire array of `IntervalTimer` objects across devices.
-
-2. **Action Events**
-   - A small payload (timestamp, `remainingTime`, `isRestPeriod`, `currentRound`).
-   - Triggers `.play`, `.pause`, or `.reset` in `TimerEngine` on the receiving side.
-
-### The Lead Device Pattern
-
-Whichever device the user taps is the **lead device**:
-
-- It immediately performs the local state transition by calling `applyAction(.play/.pause/.reset, …)`.
-- It then sends an action message to the other device.
-- The other device calls the same `applyAction(...)`, staying in sync without extra latencies.
-
-This approach ensures minimal round-trip delays for the user’s local interactions.
+- **Key Methods:**
+  - `play()`, `pause()`, `reset()`: Manage timer state.
+  - `advancePeriod()`, `nextRound()`: Handle transitions between active and rest periods, and conclude rounds.
+  - `applyAction(...)`: Synchronizes actions across devices by applying a given snapshot of timer state.
 
 ---
 
-## 5. TimerEngine Details
+## 5. Creating and Editing Timers
 
-- **Phases**:
+- **Validation:**  
+  Active duration must be greater than 0:00. CreateView and EditView enforce this by displaying an alert if the user attempts to save a timer with an active duration of 0:00.
 
-  - `.idle`: Timer is not started or has just been reset.
-  - `.active`: Counting down the active duration.
-  - `.rest`: Counting down the rest duration.
-  - `.completed`: All rounds are finished.
+- **TimerForm and DurationPicker:**  
+  These shared components use wheel pickers for selecting minutes and seconds. The active duration picker disallows 0 seconds, while the rest time picker allows 0 seconds.
 
-- **Key Methods**:
-  - **`play()`**: Begins or resumes the countdown, triggers `.idle → .active`.
-  - **`pause()`**: Halts the countdown, finalizing `remainingTime`.
-  - **`reset()`**: Returns the timer to `.idle`.
-  - **`advancePeriod()`**: Moves from active → rest, or to the next round, or to `.completed` if all rounds are done.
-  - Optionally, **when playing a new timer**, `TimerEngine` can **reset other running timers** so only one is active at a time, if desired.
-
-No ephemeral state is ever persisted; it’s all in memory.
+- **Navigation:**  
+  Upon saving a timer, the app navigates directly to the timer’s view rather than simply dismissing the form.
 
 ---
 
-## 6. Creating and Editing Timers
-
-- **CreateView (iOS)**
-
-  - Inputs: timer name, durations, and round count (or 0 for infinite).
-  - Calls `TimerManager.addTimer(...)`.
-  - Immediately syncs to watch if connected.
-
-- **EditView (iOS)**
-  - Edits an existing `IntervalTimer`.
-  - On save, updates `TimerManager` and syncs changes to watch.
-
----
-
-## 7. User Interface Highlights
+## 6. User Interface Highlights
 
 ### iOS
 
-- **HomeView**
+- **HomeView & RowView:**  
+  Timers are displayed in a list with a consistent row height. If a timer has no name, its configuration text (formatted using a shared utility) is left-aligned and centered vertically.
 
-  - Lists timers or shows a placeholder if none exist.
-  - Top bar “+” for creating new timers.
+- **TimerView:**  
+  Displays a circular progress indicator, a monospaced countdown, round indicators, and control buttons that adjust their appearance (e.g., play/pause vs. reset) based on the timer phase. Navigation toolbar buttons (back, gear) are styled for clarity.
 
-- **RowView**
-
-  - Displays the timer name and `∞ x M:SS | M:SS` or `X x M:SS | M:SS`.
-  - A blue dot if `TimerEngine.isRunning`.
-
-- **TimerView**
-  - Shows a circular progress for the current countdown.
-  - A Rest label is shown or hidden by opacity.
-  - Round indicators, plus bottom controls (Reset on the left if active, Play/Pause).
-  - Uses the “applyAction” approach for minimal code duplication.
+- **CreateView/EditView:**  
+  Forms for creating and editing timers, featuring input validation and immediate navigation to the newly created timer upon successful creation.
 
 ### watchOS
 
-- **WatchHomeView**
+- **WatchHomeView & RowView:**  
+  Display timers in a compact list optimized for the small screen, with a blue indicator for running timers.
 
-  - List of existing timers or placeholder if empty.
+- **WatchTimerView:**  
+  Features a large, monospaced countdown, haptic feedback on phase transitions, and adaptive control buttons (showing only a reset button when the timer is completed).
 
-- **WatchTimerView**
-  - Large monospaced countdown.
-  - Background color changes to green/red for active/rest.
-  - Play/Pause and Reset at the bottom.
-  - Also calls `applyAction(...)` on local interactions to stay consistent with iOS.
+- **WatchCreateView:**  
+  A swipable interface allowing users to configure a new timer. The view conditionally displays the rest time page only when the number of rounds is not 1, and provides clear navigation and validation.
 
 ---
 
-### Code Style
+## 7. Code Style and Conventions
 
-- SwiftUI-based views
-- Separate ephemeral logic (in-memory only) from persistent data.
-- Keep commit messages descriptive.
+- The project is entirely built with SwiftUI.
+- There is a clear separation between persistent configuration (managed by TimerManager and IntervalTimer) and ephemeral state (managed by TimerEngine).
+- Shared utility functions and extensions (e.g., formatting functions and configuration text generation) are centralized in a Utilities file.
+- The code follows consistent naming conventions and uses descriptive commit messages for clarity.
+- Previews are provided for rapid UI iteration.
+
+---
+
+## 8. Additional Notes
+
+- **Audio Management:**  
+  An AudioManager (using AVAudioPlayer) handles playback of bell sounds on iOS. It responds to notifications when timer phases change (e.g., starting a round or ending a round).
+
+- **WatchConnectivity:**  
+  A unified provider synchronizes timer configurations and action events between iOS and watchOS devices.
+
+- **Platform-Specific Adjustments:**  
+  iOS and watchOS have distinct UI components (NavigationStack vs. NavigationView, usage of WKInterfaceDevice for watch screen metrics) which are handled appropriately in their respective targets.
+
+---
+
+This README.md is intended to give new AI coding assistants or developers a comprehensive and context-rich overview of the TimeBurn project, enabling them to quickly understand the architecture, key components, data flow, and coding conventions in use.

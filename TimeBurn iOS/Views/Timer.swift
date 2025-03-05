@@ -15,11 +15,11 @@ struct TimerView: View {
     // Computed property for button color based on timer phase.
     private var currentButtonColor: Color {
         switch engine.phase {
-        case .idle:
+        case .idle, .completed:
             return Color.accentColor
         case .active:
             return Color.green
-        case .rest, .completed:
+        case .rest:
             return Color.red
         }
     }
