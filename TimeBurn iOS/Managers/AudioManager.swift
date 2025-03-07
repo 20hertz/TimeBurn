@@ -9,13 +9,15 @@ import Foundation
 import AVFoundation
 
 /// Manages audio playback for the TimeBurn app on iOS.
-class AudioManager {
+class AudioManager: NSObject, AVAudioPlayerDelegate {
     static let shared = AudioManager()
     
     private var audioPlayer: AVAudioPlayer?
     
-    private init() {
-        // Observe for notifications to play sounds
+    private override init() {
+        super.init()
+        
+        // Observe for notifications to play sounds.
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handlePhaseChangeToActiveNotification(_:)),
@@ -35,7 +37,7 @@ class AudioManager {
         NotificationCenter.default.removeObserver(self)
     }
     
-    /// Plays the specified sound.
+    /// Plays the specified sound and automatically deactivates the audio session afterward.
     /// - Parameters:
     ///   - soundName: The name of the sound file (without extension).
     ///   - soundExtension: The extension of the sound file.
@@ -45,7 +47,13 @@ class AudioManager {
         }
         
         do {
+            let session = AVAudioSession.sharedInstance()
+            // Activate the session with ducking and notifyOthersOnDeactivation options.
+            try session.setCategory(.playback, options: [.duckOthers])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            
             audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = self
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
@@ -54,11 +62,22 @@ class AudioManager {
         }
     }
     
+    // MARK: - AVAudioPlayerDelegate
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        // Deactivate the audio session to restore other audio's volume.
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Error deactivating audio session: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Notification Handlers
+    
     @objc private func handlePhaseChangeToActiveNotification(_ notification: Notification) {
-        if let timer = notification.object as? IntervalTimer {
-            if timer.enableSound {
-                playSound(soundName: "Bell - 1 Ring")
-            }
+        if let timer = notification.object as? IntervalTimer, timer.enableSound {
+            playSound(soundName: "Bell - 1 Ring")
         }
     }
     
