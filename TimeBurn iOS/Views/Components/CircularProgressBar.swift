@@ -31,7 +31,7 @@ struct CircularProgressBar: View {
                 .animation(.easeInOut, value: progress)
             
             Text(formatTime(from: remainingTime))
-                .font(.system(size: 40, design: .monospaced))
+                .font(.system(size: 46, design: .monospaced))
         }
     }
 }
