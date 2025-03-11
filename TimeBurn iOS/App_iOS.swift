@@ -13,6 +13,7 @@ struct App_iOS: App {
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
     @StateObject private var navigationCoordinator = NavigationCoordinator.shared
+    @StateObject private var playbackMonitor = PlaybackMonitor()
     
     private let audioManager = AudioManager.shared
     

@@ -13,7 +13,8 @@ struct App_watchOS: App {
     @StateObject private var timerManager = TimerManager.shared
     @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
     @StateObject private var navigationCoordinator = NavigationCoordinator.shared
-
+    @StateObject private var playbackMonitor = PlaybackMonitor()
+    
     @ViewBuilder
     private func rootView() -> some View {
         if #available(watchOS 9.0, *) {

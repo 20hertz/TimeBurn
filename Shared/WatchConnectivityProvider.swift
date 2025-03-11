@@ -8,9 +8,10 @@
 import Foundation
 import WatchConnectivity
 import Combine
+import AVFoundation
 
 /// A unified provider for watch connectivity, used by both iOS and watchOS.
-/// Handles syncing of IntervalTimer lists and user actions (play/pause/reset).
+/// Handles syncing of IntervalTimer lists, user actions (play/pause/reset), and now music playback state.
 public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDelegate {
     
     public static let shared = WatchConnectivityProvider()
@@ -18,6 +19,21 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     private override init() {}
     
     private var session: WCSession?
+    
+    // MARK: - Music Playback State Properties
+    
+    /// The local device’s music playback state.
+    @Published public var localMusicPlaying: Bool = false
+    
+    /// The counterpart device’s music playback state.
+    @Published public var remoteMusicPlaying: Bool = false
+    
+    /// A computed state that is true if either device is playing audio.
+    public var globalMusicPlaying: Bool {
+        return localMusicPlaying || remoteMusicPlaying
+    }
+    
+    // MARK: - Session Setup
     
     /// Starts the watch connectivity session.
     public func startSession() {
@@ -28,7 +44,7 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         self.session = defaultSession
     }
     
-    // MARK: - Send/Receive Full Timer Lists
+    // MARK: - Timer and Action Methods (unchanged)
     
     /// Sends an updated list of IntervalTimers to the counterpart.
     public func sendTimers(_ timers: [IntervalTimer]) {
@@ -48,14 +64,10 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         #endif
     }
     
-    // MARK: - Send/Receive User Actions
-    
     /// Sends a user action (play/pause/reset) for a specific IntervalTimer to the counterpart.
     public func sendAction(timerID: UUID, action: TimerAction) {
         guard let session = session else { return }
         
-        // Here we assume that TimerManager.shared or the currently active engine
-        // has the snapshot we want to send. Adjust as needed if you have a different source.
         let engine = ActiveTimerEngines.shared.engine(for: TimerManager.shared.timers.first { $0.id == timerID }!)
         
         let payload: [String: Any] = [
@@ -106,9 +118,38 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         }
     }
     
-    // MARK: - WCSessionDelegate
+    // MARK: - Music Playback State Methods
     
-    /// Called when a message arrives. We check if it's an timers array or an action event.
+    /// Updates the local music playback state and sends it to the counterpart.
+    public func updateLocalMusicPlaybackState(playing: Bool) {
+        localMusicPlaying = playing
+        #if os(iOS)
+        sendMusicPlaybackState(key: "iosMusicPlaying", playing: playing)
+        #elseif os(watchOS)
+        sendMusicPlaybackState(key: "watchMusicPlaying", playing: playing)
+        #endif
+    }
+    
+    /// Sends the local music playback state using the specified key.
+    private func sendMusicPlaybackState(key: String, playing: Bool) {
+        let message: [String: Any] = [key: playing]
+        // Update application context for background state sync.
+        do {
+            try session?.updateApplicationContext(message)
+        } catch {
+            print("Error updating music playback context: \(error)")
+        }
+        // Send immediate message if reachable.
+        if session?.isReachable == true {
+            session?.sendMessage(message, replyHandler: nil, errorHandler: { error in
+                print("Error sending music playback message: \(error)")
+            })
+        }
+    }
+    
+    // MARK: - WCSessionDelegate Methods
+    
+    /// Called when a message arrives. We check for timers, action events, navigation events, or music playback updates.
     public func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         // 1) Incoming timers
         if let data = message["timers"] as? Data {
@@ -125,12 +166,46 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
             handleActionEvent(message)
         }
         
-        // 3) Incoming "navigateToTimer"
+        // 3) Incoming navigation event
         if let timerIDString = message["navigateToTimer"] as? String {
             DispatchQueue.main.async {
                 NavigationCoordinator.shared.navigateToTimer(uuidString: timerIDString)
             }
         }
+        
+        // 4) Incoming music playback updates
+        #if os(iOS)
+        // On iOS, update remote state from the watch.
+        if let watchPlaying = message["watchMusicPlaying"] as? Bool {
+            DispatchQueue.main.async {
+                self.remoteMusicPlaying = watchPlaying
+            }
+        }
+        #elseif os(watchOS)
+        // On watchOS, update remote state from the iOS device.
+        if let iosPlaying = message["iosMusicPlaying"] as? Bool {
+            DispatchQueue.main.async {
+                self.remoteMusicPlaying = iosPlaying
+            }
+        }
+        #endif
+    }
+    
+    public func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        // Handle music playback updates from the application context.
+        #if os(iOS)
+        if let watchPlaying = applicationContext["watchMusicPlaying"] as? Bool {
+            DispatchQueue.main.async {
+                self.remoteMusicPlaying = watchPlaying
+            }
+        }
+        #elseif os(watchOS)
+        if let iosPlaying = applicationContext["iosMusicPlaying"] as? Bool {
+            DispatchQueue.main.async {
+                self.remoteMusicPlaying = iosPlaying
+            }
+        }
+        #endif
     }
     
     #if os(iOS)

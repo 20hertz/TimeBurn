@@ -31,6 +31,20 @@ struct WatchTimerView: View {
             }
             lastPhase = newPhase
         }
+        .overlay(
+            Group {
+                if connectivityProvider.globalMusicPlaying {
+                    Image(systemName: "music.note")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                        .padding(10)
+                        .transition(.opacity)
+                }
+            },
+            alignment: .bottomTrailing
+        )
+        .animation(.easeInOut, value: connectivityProvider.globalMusicPlaying)
     }
     
     private var timeDisplay: some View {
@@ -72,7 +86,6 @@ struct WatchTimerView: View {
             }
         }
         .padding(.bottom, 20)
-            
     }
     
     private var backgroundColor: Color {
