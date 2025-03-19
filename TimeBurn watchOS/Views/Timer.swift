@@ -48,9 +48,23 @@ struct WatchTimerView: View {
     }
     
     private var timeDisplay: some View {
-        Text(formatTime(from: engine.remainingTime))
-            .font(.system(.title, design: .monospaced))
-            .padding(.top, 20)
+        HStack {
+            Spacer()
+            Text(formatTime(from: engine.remainingTime))
+                .font(.system(.title, design: .monospaced))
+            Spacer()
+            editButton
+            Spacer()
+        }
+        .padding(.top, 20)
+    }
+    
+    private var editButton: some View {
+        NavigationLink(destination: WatchEditView(timer: engine.timer)) {
+            Image(systemName: "gearshape")
+                .imageScale(.large)
+        }
+        .fixedSize()
     }
     
     @ViewBuilder
