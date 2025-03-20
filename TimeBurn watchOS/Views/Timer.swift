@@ -14,49 +14,132 @@ struct WatchTimerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var lastPhase: TimerEngine.Phase = .idle
+    @State private var isFocused: Bool = false
+    @Namespace private var animationNamespace
 
     var body: some View {
-        VStack(spacing: 12) {
-            timeDisplay
-            roundIndicators().padding(.top, 8)
-            Spacer()
-            controlButtons
-        }
-        .background(backgroundColor)
-        .onChange(of: engine.phase) { newPhase in
-            if newPhase == .active && lastPhase != .active {
-                WKInterfaceDevice.current().play(.success)
-            } else if newPhase == .rest && lastPhase != .rest {
-                WKInterfaceDevice.current().play(.failure)
+        GeometryReader { geo in
+            ZStack {
+                // Background: use backgroundColor when focused, else clear.
+                (isFocused ? backgroundColor : Color.clear)
+                    .edgesIgnoringSafeArea(.all)
+                    .animation(.easeInOut, value: isFocused)
+                
+                // Normal layout: always present but elements slide out in focus mode.
+                VStack(spacing: 12) {
+                    HStack {
+                        Spacer()
+                        // Hide normal time display when focused, since overlay version is used.
+                        timeDisplay
+                            .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
+                            .opacity(isFocused ? 0 : 1)
+                        Spacer()
+                        editButton
+                            .offset(x: isFocused ? 200 : 0)
+                            .animation(.easeInOut, value: isFocused)
+                        Spacer()
+                    }
+                    roundIndicators()
+                        .padding(.top, 8)
+                        .offset(y: isFocused ? 200 : 0)
+                        .animation(.easeInOut, value: isFocused)
+                    Spacer()
+                    controlButtons
+                        .offset(y: isFocused ? 200 : 0)
+                        .animation(.easeInOut, value: isFocused)
+                }
+                
+                // Overlay focused time display: centered and scaled-up.
+                if isFocused {
+                    timeDisplay
+                        .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
+                        .scaleEffect(1.5)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                        .onTapGesture {
+                            withAnimation(.easeInOut) { isFocused = false }
+                        }
+                }
             }
-            lastPhase = newPhase
+        }
+        .onChange(of: engine.phase) { newPhase in
+             if newPhase == .active && lastPhase != .active {
+                 WKInterfaceDevice.current().play(.success)
+                 withAnimation(.easeInOut) {
+                     isFocused = true
+                 }
+             } else if newPhase == .rest && lastPhase != .rest {
+                 WKInterfaceDevice.current().play(.failure)
+             }
+             lastPhase = newPhase
+        }
+        .onTapGesture {
+             if isFocused {
+                 withAnimation(.easeInOut) {
+                     isFocused = false
+                 }
+             }
         }
         .overlay(
-            Group {
-                if connectivityProvider.globalMusicPlaying {
-                    Image(systemName: "music.note")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                        .padding(10)
-                        .transition(.opacity)
-                }
-            },
-            alignment: .bottomTrailing
+             Group {
+                 if connectivityProvider.globalMusicPlaying {
+                     Image(systemName: "music.note")
+                         .resizable()
+                         .scaledToFit()
+                         .frame(width: 20, height: 20)
+                         .padding(10)
+                         .transition(.opacity)
+                 }
+             },
+             alignment: .bottomTrailing
         )
         .animation(.easeInOut, value: connectivityProvider.globalMusicPlaying)
     }
     
     private var timeDisplay: some View {
-        HStack {
-            Spacer()
-            Text(formatTime(from: engine.remainingTime))
-                .font(.system(.title, design: .monospaced))
-            Spacer()
-            editButton
-            Spacer()
+        Text(formatTime(from: engine.remainingTime))
+            .font(.system(.title, design: .monospaced))
+            .foregroundColor(isFocused ? .primary : .accentColor)
+    }
+    
+    // Computes the offset for time display so that it slides from its normal (top-center) position to the center.
+    private func timeDisplayOffset(in size: CGSize) -> CGSize {
+        if isFocused {
+             // Assume normal view position is approximately at y = 50.
+             let normalY: CGFloat = 50
+             let targetY = size.height / 2
+             let verticalOffset = targetY - normalY
+             // No horizontal offset for perfect centering.
+             return CGSize(width: 0, height: verticalOffset)
+        } else {
+             return .zero
         }
-        .padding(.top, 20)
+    }
+
+    // Slides the edit button to the right when focused.
+    private func editButtonOffset(in size: CGSize) -> CGSize {
+        if isFocused {
+            return CGSize(width: 200, height: 0)
+        } else {
+            return .zero
+        }
+    }
+
+    // Slides the control buttons off the bottom when focused.
+    private func controlButtonsOffset(in size: CGSize) -> CGSize {
+        if isFocused {
+            return CGSize(width: 0, height: 200)
+        } else {
+            return .zero
+        }
+    }
+
+    // Slides the round indicators off the bottom when focused.
+    private func roundIndicatorsOffset(in size: CGSize) -> CGSize {
+        if isFocused {
+            return CGSize(width: 0, height: 200)
+        } else {
+            return .zero
+        }
     }
     
     private var editButton: some View {
@@ -65,6 +148,8 @@ struct WatchTimerView: View {
                 .imageScale(.large)
         }
         .fixedSize()
+        .offset(x: isFocused ? 200 : 0)
+        .animation(.easeInOut, value: isFocused)
     }
     
     @ViewBuilder
@@ -91,7 +176,14 @@ struct WatchTimerView: View {
             }
             if engine.phase != .completed {
                 Button {
-                    engine.isRunning ? localApply(.pause) : localApply(.play)
+                    if !engine.isRunning {
+                        withAnimation(.easeInOut) {
+                            isFocused = true
+                        }
+                        localApply(.play)
+                    } else {
+                        localApply(.pause)
+                    }
                 } label: {
                     Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
                         .font(.largeTitle)
