@@ -25,13 +25,13 @@ struct WatchTimerView: View {
                     .edgesIgnoringSafeArea(.all)
                     .animation(.easeInOut, value: isFocused)
                 
-                // Normal layout: always present but elements slide out in focus mode.
+                // Normal layout: use the grouped timeAndRoundView for time display and round indicators.
                 VStack(spacing: 12) {
                     HStack {
                         Spacer()
-                        // Hide normal time display when focused, since overlay version is used.
-                        timeDisplay
-                            .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
+                        // Use the grouped container with a matchedGeometryEffect.
+                        timeAndRoundView
+                            .matchedGeometryEffect(id: "timeAndRound", in: animationNamespace)
                             .opacity(isFocused ? 0 : 1)
                         Spacer()
                         editButton
@@ -39,20 +39,16 @@ struct WatchTimerView: View {
                             .animation(.easeInOut, value: isFocused)
                         Spacer()
                     }
-                    roundIndicators()
-                        .padding(.top, 8)
-                        .offset(y: isFocused ? 200 : 0)
-                        .animation(.easeInOut, value: isFocused)
                     Spacer()
                     controlButtons
                         .offset(y: isFocused ? 200 : 0)
                         .animation(.easeInOut, value: isFocused)
                 }
                 
-                // Overlay focused time display: centered and scaled-up.
+                // Overlay focused view: show the grouped container centered and scaled up.
                 if isFocused {
-                    timeDisplay
-                        .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
+                    timeAndRoundView
+                        .matchedGeometryEffect(id: "timeAndRound", in: animationNamespace)
                         .scaleEffect(1.5)
                         .position(x: geo.size.width / 2, y: geo.size.height / 2)
                         .onTapGesture {
@@ -139,6 +135,14 @@ struct WatchTimerView: View {
             return CGSize(width: 0, height: 200)
         } else {
             return .zero
+        }
+    }
+    
+    // Add the following computed property below the existing timeDisplay property:
+    private var timeAndRoundView: some View {
+        VStack(spacing: 8) {
+            timeDisplay
+            roundIndicators()
         }
     }
     
