@@ -15,6 +15,7 @@ struct WatchTimerView: View {
 
     @State private var lastPhase: TimerEngine.Phase = .idle
     @State private var isFocused: Bool = false
+    
     @Namespace private var animationNamespace
 
     var body: some View {
@@ -29,10 +30,14 @@ struct WatchTimerView: View {
                 VStack(spacing: 12) {
                     HStack {
                         Spacer()
-                        // Use the grouped container with a matchedGeometryEffect.
                         timeAndRoundView
                             .matchedGeometryEffect(id: "timeAndRound", in: animationNamespace)
                             .opacity(isFocused ? 0 : 1)
+                            .onTapGesture {
+                                withAnimation(.easeInOut) {
+                                    isFocused = true
+                                }
+                            }
                         Spacer()
                         editButton
                             .offset(x: isFocused ? 200 : 0)
