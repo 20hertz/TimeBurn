@@ -56,7 +56,7 @@ struct WatchHomeView: View {
             if let uuid = navigationCoordinator.selectedTimerID,
                let timer = timerManager.timers.first(where: { $0.id == uuid }) {
                 let engine = ActiveTimerEngines.shared.engine(for: timer)
-                WatchTimerView(engine: engine)
+                WatchTimerView(engine: engine, startFocused: true)
             } else {
                 Text("Timer not found.")
             }

@@ -17,6 +17,8 @@ struct WatchTimerView: View {
     @State private var isFocused: Bool = false
     
     @Namespace private var animationNamespace
+    
+    var startFocused: Bool = false
 
     var body: some View {
         GeometryReader { geo in
@@ -59,6 +61,13 @@ struct WatchTimerView: View {
                         .onTapGesture {
                             withAnimation(.easeInOut) { isFocused = false }
                         }
+                }
+            }
+        }
+        .onAppear {
+            if startFocused {
+                withAnimation(.easeInOut) {
+                    isFocused = true
                 }
             }
         }
