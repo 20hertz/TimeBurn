@@ -29,9 +29,7 @@ struct WatchTimerView: View {
                     .edgesIgnoringSafeArea(.all)
                     .animation(.easeInOut, value: isFocused)
                 
-                // Normal layout: use the grouped timeAndRoundView for time display and round indicators.
-                // In the normal layout within the VStack (inside the ZStack), replace the current HStack and timeAndRoundView with the following:
-
+                // Normal layout
                 VStack(spacing: 12) {
                     HStack {
                         Spacer()
@@ -130,7 +128,9 @@ struct WatchTimerView: View {
         // Invalidate any existing timer
         inactivityTimer?.invalidate()
             
-        // Only start timer if is running AND NOT paused, and not already focused
+        // Only start timer if engine is running AND not already focused
+        // When a user manually pauses, engine.isRunning becomes false,
+        // so we shouldn't auto-focus in that case
         guard engine.isRunning && !isFocused else { return }
             
         inactivityTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
@@ -231,6 +231,7 @@ struct WatchTimerView: View {
                         localApply(.play)
                     } else {
                         localApply(.pause)
+                        inactivityTimer?.invalidate()
                     }
                 } label: {
                     Image(systemName: engine.isRunning ? "pause.circle.fill" : "play.circle.fill")
