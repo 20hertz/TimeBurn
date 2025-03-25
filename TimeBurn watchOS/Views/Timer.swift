@@ -30,16 +30,17 @@ struct WatchTimerView: View {
                     .animation(.easeInOut, value: isFocused)
                 
                 // Normal layout: use the grouped timeAndRoundView for time display and round indicators.
+                // In the normal layout within the VStack (inside the ZStack), replace the current HStack and timeAndRoundView with the following:
+
                 VStack(spacing: 12) {
                     HStack {
                         Spacer()
-                        timeAndRoundView
-                            .matchedGeometryEffect(id: "timeAndRound", in: animationNamespace)
+                        // Show only the time display here with the matchedGeometryEffect.
+                        timeDisplay
+                            .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
                             .opacity(isFocused ? 0 : 1)
                             .onTapGesture {
-                                withAnimation(.easeInOut) {
-                                    isFocused = true
-                                }
+                                withAnimation(.easeInOut) { isFocused = true }
                             }
                         Spacer()
                         editButton
@@ -47,21 +48,31 @@ struct WatchTimerView: View {
                             .animation(.easeInOut, value: isFocused)
                         Spacer()
                     }
+
+                    roundIndicator()
+                        .matchedGeometryEffect(id: "roundIndicator", in: animationNamespace)
+                        .opacity(isFocused ? 0 : 1)
+                        .animation(.easeInOut, value: isFocused)
                     Spacer()
                     controlButtons
                         .offset(y: isFocused ? 200 : 0)
                         .animation(.easeInOut, value: isFocused)
                 }
-                
-                // Overlay focused view: show the grouped container centered and scaled up.
+
                 if isFocused {
-                    timeAndRoundView
-                        .matchedGeometryEffect(id: "timeAndRound", in: animationNamespace)
+                    // Focus view: overlay the time display (with matched geometry) centered and scaled up.
+                    timeDisplay
+                        .matchedGeometryEffect(id: "timeDisplay", in: animationNamespace)
                         .scaleEffect(1.5)
                         .position(x: geo.size.width / 2, y: geo.size.height / 2)
                         .onTapGesture {
                             withAnimation(.easeInOut) { isFocused = false }
                         }
+                    // In the focus view overlay (inside the if isFocused block), update the round indicator as follows:
+                    roundIndicator()
+                        .matchedGeometryEffect(id: "roundIndicator", in: animationNamespace)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2 + 40)
+                        .animation(.easeInOut, value: isFocused)
                 }
             }
         }
@@ -88,7 +99,6 @@ struct WatchTimerView: View {
             startInactivityTimer()
         }
         .onChange(of: isFocused) { _ in
-                    // Restart idle timer when focus changes
             startInactivityTimer()
         }
         .onTapGesture {
@@ -176,12 +186,11 @@ struct WatchTimerView: View {
             return .zero
         }
     }
-    
-    // Add the following computed property below the existing timeDisplay property:
+
     private var timeAndRoundView: some View {
         VStack(spacing: 8) {
             timeDisplay
-            roundIndicators()
+            roundIndicator()
         }
     }
     
@@ -196,16 +205,12 @@ struct WatchTimerView: View {
     }
     
     @ViewBuilder
-    private func roundIndicators() -> some View {
+    private func roundIndicator() -> some View {
         if engine.timer.totalRounds > 1 {
-            HStack(spacing: 6) {
-                ForEach(0..<engine.timer.totalRounds, id: \.self) { index in
-                    Circle()
-                        .stroke(Color.white, lineWidth: 1)
-                        .background(Circle().fill(index < engine.currentRound ? Color.white : Color.clear))
-                        .frame(width: 10, height: 10)
-                }
-            }
+            let roundsText = engine.timer.totalRounds == 0 ? "∞" : "\(engine.timer.totalRounds)"
+            Text("\(engine.currentRound)/\(roundsText)")
+                .font(.caption2)
+                .foregroundColor(.white)
         }
     }
     
