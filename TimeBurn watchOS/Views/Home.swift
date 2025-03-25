@@ -8,62 +8,118 @@
 import SwiftUI
 
 struct WatchHomeView: View {
+    // MARK: - Properties
     @EnvironmentObject var timerManager: TimerManager
-    @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+    @StateObject private var connectivityProvider = WatchConnectivityProvider.shared
 
     @State private var navigateToSelectedTimer = false
     @State private var showingCreateView = false
+    
+    // MARK: - Body
     var body: some View {
         Group {
             if timerManager.timers.isEmpty {
-                // Placeholder view when there are no timers.
-                VStack(spacing: 8) {
-                    Text("No timers created yet.")
-                        .font(.headline)
-                    Text("Create a new timer on your iOS device.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                emptyStateView
             } else {
-                List {
-                    ForEach(timerManager.timers) { timer in
-                        let engine = ActiveTimerEngines.shared.engine(for: timer)
-                        RowView(timer: timer, engine: engine)
-                    }
-                }
+                timerListView
             }
         }
         .navigationTitle("Timers")
         .toolbar {
-            // Use .confirmationAction placement instead of .navigationBarTrailing on watchOS
             ToolbarItem(placement: .confirmationAction) {
-                Button {
-                    showingCreateView = true
-                } label: {
+                Button { showingCreateView = true } label: {
                     Image(systemName: "plus")
                 }
             }
         }
-        // Present WatchCreateView when needed
         .fullScreenCover(isPresented: $showingCreateView) {
             WatchCreateView()
                 .environmentObject(timerManager)
                 .environmentObject(connectivityProvider)
         }
-        .conditionalNavigationDestination(isPresented: $navigateToSelectedTimer) {
-            if let uuid = navigationCoordinator.selectedTimerID,
-               let timer = timerManager.timers.first(where: { $0.id == uuid }) {
+        .modifier(WatchVersionCompatibilityModifier(
+            navigateToSelectedTimer: $navigateToSelectedTimer,
+            selectedTimerID: navigationCoordinator.selectedTimerID,
+            timerManager: timerManager
+        ))
+    }
+    
+    // MARK: - Component Views
+    
+    /// View displayed when no timers exist
+    private var emptyStateView: some View {
+        VStack(spacing: 8) {
+            Text("No timers created yet.")
+                .font(.headline)
+            Text("Create a new timer on your iOS device.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    /// List of existing timers
+    private var timerListView: some View {
+        List {
+            ForEach(timerManager.timers) { timer in
                 let engine = ActiveTimerEngines.shared.engine(for: timer)
-                WatchTimerView(engine: engine, startFocused: true)
-            } else {
-                Text("Timer not found.")
+                RowView(timer: timer, engine: engine)
             }
         }
-        .conditionalOnChange(of: navigationCoordinator.selectedTimerID) { newValue in
-            navigateToSelectedTimer = (newValue != nil)
+    }
+}
+
+// MARK: - Supporting Structures
+
+/// Handles version-specific navigation logic
+struct WatchVersionCompatibilityModifier: ViewModifier {
+    @Binding var navigateToSelectedTimer: Bool
+    let selectedTimerID: UUID?
+    let timerManager: TimerManager
+    
+    func body(content: Content) -> some View {
+        if #available(watchOS 9.0, *) {
+            content
+                .navigationDestination(isPresented: $navigateToSelectedTimer) {
+                    timerDestinationView
+                }
+                .onChange(of: selectedTimerID) { newValue in
+                    navigateToSelectedTimer = (newValue != nil)
+                }
+        } else {
+            content
+                .onChange(of: selectedTimerID) { newValue in
+                    navigateToSelectedTimer = (newValue != nil)
+                }
         }
+    }
+    
+    @ViewBuilder
+    private var timerDestinationView: some View {
+        if let uuid = selectedTimerID,
+           let timer = timerManager.timers.first(where: { $0.id == uuid }) {
+            let engine = ActiveTimerEngines.shared.engine(for: timer)
+            WatchTimerView(engine: engine, startFocused: true)
+        } else {
+            Text("Timer not found.")
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    let previewManager = TimerManager.shared
+    previewManager.setTimers([
+        IntervalTimer(name: "Circuit", activeDuration: 45, restDuration: 15, totalRounds: 6),
+        IntervalTimer(name: "Sprint", activeDuration: 30, restDuration: 30, totalRounds: 5)
+    ])
+    
+    return NavigationView {
+        WatchHomeView()
+            .environmentObject(previewManager)
+            .environmentObject(NavigationCoordinator.shared)
     }
 }
 
@@ -101,82 +157,5 @@ struct RowView: View {
             .padding(.vertical, 4)
             .frame(height: 50) // Fixed row height
         }
-    }
-}
-
-#Preview {
-    let previewManager = TimerManager.shared
-    // Uncomment one of these to test empty state versus list state:
-    // previewManager.setTimers([])  // Empty state – shows placeholder message.
-    previewManager.setTimers([
-        IntervalTimer(name: "Circuit", activeDuration: 45, restDuration: 15, totalRounds: 6),
-        IntervalTimer(name: "Sprint", activeDuration: 30, restDuration: 30, totalRounds: 5)
-    ])
-    
-    return NavigationView {
-        WatchHomeView()
-            .environmentObject(previewManager)
-    }
-}
-
-// Custom modifier for navigationDestination (requires watchOS 9+)
-struct ConditionalNavigationDestination<Destination: View>: ViewModifier {
-    @Binding var isPresented: Bool
-    let destination: () -> Destination
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(watchOS 9.0, *) {
-            content.navigationDestination(isPresented: $isPresented, destination: destination)
-        } else {
-            // For older versions, simply return the content unmodified.
-            content
-        }
-    }
-}
-
-extension View {
-    func conditionalNavigationDestination<Destination: View>(
-        isPresented: Binding<Bool>,
-        @ViewBuilder destination: @escaping () -> Destination
-    ) -> some View {
-        self.modifier(ConditionalNavigationDestination(isPresented: isPresented, destination: destination))
-    }
-}
-
-// Custom modifier for onChange (uses the new overload on watchOS 10+)
-struct ConditionalOnChange<Value: Equatable>: ViewModifier {
-    let value: Value
-    let action: (Value) -> Void
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(watchOS 10.0, *) {
-            newOnChange(content: content)
-        } else {
-            oldOnChange(content: content)
-        }
-    }
-    
-    @available(watchOS 10.0, *)
-    private func newOnChange<Content: View>(content: Content) -> some View {
-        content.onChange(of: value, initial: false) { oldValue, newValue in
-            action(newValue)
-        }
-    }
-    
-    private func oldOnChange<Content: View>(content: Content) -> some View {
-        content.onChange(of: value) { newValue in
-            action(newValue)
-        }
-    }
-}
-
-extension View {
-    func conditionalOnChange<Value: Equatable>(
-        of value: Value,
-        perform action: @escaping (Value) -> Void
-    ) -> some View {
-        self.modifier(ConditionalOnChange(value: value, action: action))
     }
 }
