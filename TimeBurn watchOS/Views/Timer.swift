@@ -15,6 +15,7 @@ struct WatchTimerView: View {
 
     @State private var lastPhase: TimerEngine.Phase = .idle
     @State private var isFocused: Bool = false
+    @State private var inactivityTimer: Timer? = nil
     
     @Namespace private var animationNamespace
     
@@ -70,6 +71,8 @@ struct WatchTimerView: View {
                     isFocused = true
                 }
             }
+            
+            startInactivityTimer()
         }
         .onChange(of: engine.phase) { newPhase in
              if newPhase == .active && lastPhase != .active {
@@ -81,6 +84,12 @@ struct WatchTimerView: View {
                  WKInterfaceDevice.current().play(.failure)
              }
              lastPhase = newPhase
+            
+            startInactivityTimer()
+        }
+        .onChange(of: isFocused) { _ in
+                    // Restart idle timer when focus changes
+            startInactivityTimer()
         }
         .onTapGesture {
              if isFocused {
@@ -88,6 +97,8 @@ struct WatchTimerView: View {
                      isFocused = false
                  }
              }
+            
+            startInactivityTimer()
         }
         .overlay(
              Group {
@@ -103,6 +114,20 @@ struct WatchTimerView: View {
              alignment: .bottomTrailing
         )
         .animation(.easeInOut, value: connectivityProvider.globalMusicPlaying)
+    }
+    
+    private func startInactivityTimer() {
+        // Invalidate any existing timer
+        inactivityTimer?.invalidate()
+            
+        // Only start timer if is running AND NOT paused, and not already focused
+        guard engine.isRunning && !isFocused else { return }
+            
+        inactivityTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+            withAnimation(.easeInOut) {
+                isFocused = true
+            }
+        }
     }
     
     private var timeDisplay: some View {

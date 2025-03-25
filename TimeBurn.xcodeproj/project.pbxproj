@@ -37,6 +37,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F42EE1172D93050000E3D700 /* OSLog.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OSLog.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.1.sdk/System/Library/Frameworks/OSLog.framework; sourceTree = DEVELOPER_DIR; };
+		F42EE1192D93057900E3D700 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.1.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		F49700B02D7E3801002A0796 /* WatchKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchKit.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.1.sdk/System/Library/Frameworks/WatchKit.framework; sourceTree = DEVELOPER_DIR; };
 		F4F26E512D2D826200AA8B3D /* TimeBurn iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimeBurn iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4F26E662D2D82A800AA8B3D /* TimeBurn watchOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimeBurn watchOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -104,6 +106,8 @@
 		F4F26E962D2D928200AA8B3D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F42EE1192D93057900E3D700 /* Foundation.framework */,
+				F42EE1172D93050000E3D700 /* OSLog.framework */,
 				F49700B02D7E3801002A0796 /* WatchKit.framework */,
 				F4F26E972D2D928300AA8B3D /* WatchConnectivity.framework */,
 			);
