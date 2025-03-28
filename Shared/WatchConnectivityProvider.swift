@@ -22,16 +22,26 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     
     // MARK: - Music Playback State Properties
     
-    /// The local device’s music playback state.
+    /// The local device's music playback state.
     @Published public var localMusicPlaying: Bool = false
     
-    /// The counterpart device’s music playback state.
+    /// The counterpart device's music playback state.
     @Published public var remoteMusicPlaying: Bool = false
     
     /// A computed state that is true if either device is playing audio.
     public var globalMusicPlaying: Bool {
         return localMusicPlaying || remoteMusicPlaying
     }
+    
+    // MARK: - Volume Control
+    
+    #if os(iOS)
+    /// Store the original volume before reduction
+    private var originalVolume: Float = 1.0
+    
+    /// The current state of volume reduction
+    @Published public var volumeReduced: Bool = false
+    #endif
     
     // MARK: - Session Setup
     
@@ -91,6 +101,42 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         #endif
     }
     
+    // MARK: - Volume Control Methods
+    
+    #if os(watchOS)
+    /// Sends a command to the iPhone to reduce or restore volume
+    public func sendVolumeControl(reduce: Bool) {
+        guard let session = session, session.isReachable else { return }
+        
+        let message: [String: Any] = [
+            "volumeControl": true,
+            "reduce": reduce
+        ]
+        
+        session.sendMessage(message, replyHandler: nil) { error in
+            print("Error sending volume control message: \(error)")
+        }
+    }
+    #endif
+    
+    #if os(iOS)
+    /// Handles volume reduction requests from watchOS
+    private func handleVolumeControl(reduce: Bool) {
+        // If we're reducing the volume and it's not already reduced
+        if reduce && !volumeReduced {
+            // Use VolumeControl to handle the actual volume adjustment
+            VolumeControl.shared.reduceVolume()
+            volumeReduced = true
+        }
+        // If we're restoring volume
+        else if !reduce && volumeReduced {
+            // Use VolumeControl to restore the volume
+            VolumeControl.shared.restoreVolume()
+            volumeReduced = false
+        }
+    }
+    #endif
+    
     private func handleActionEvent(_ message: [String : Any]) {
         guard
             let rawAction = message["action"] as? String,
@@ -149,7 +195,7 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     
     // MARK: - WCSessionDelegate Methods
     
-    /// Called when a message arrives. We check for timers, action events, navigation events, or music playback updates.
+    /// Called when a message arrives. We check for timers, action events, navigation events, music playback updates, or volume control.
     public func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         // 1) Incoming timers
         if let data = message["timers"] as? Data {
@@ -173,7 +219,17 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
             }
         }
         
-        // 4) Incoming music playback updates
+        // 4) Incoming volume control event
+        #if os(iOS)
+        if let isVolumeControl = message["volumeControl"] as? Bool, isVolumeControl,
+           let reduce = message["reduce"] as? Bool {
+            DispatchQueue.main.async {
+                self.handleVolumeControl(reduce: reduce)
+            }
+        }
+        #endif
+        
+        // 5) Incoming music playback updates
         #if os(iOS)
         // On iOS, update remote state from the watch.
         if let watchPlaying = message["watchMusicPlaying"] as? Bool {

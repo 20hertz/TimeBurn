@@ -16,6 +16,7 @@ struct WatchTimerView: View {
     @State private var lastPhase: TimerEngine.Phase = .idle
     @State private var isFocused: Bool = false
     @State private var inactivityTimer: Timer? = nil
+    @State private var volumeReduced: Bool = false
     
     @Namespace private var animationNamespace
     
@@ -111,17 +112,33 @@ struct WatchTimerView: View {
         .overlay(
              Group {
                  if connectivityProvider.globalMusicPlaying {
-                     Image(systemName: "music.note")
-                         .resizable()
-                         .scaledToFit()
-                         .frame(width: 20, height: 20)
-                         .padding(10)
-                         .transition(.opacity)
+                     Button(action: {
+                         toggleVolumeReduction()
+                     }) {
+                         Image(systemName: volumeReduced ? "music.note.list" : "music.note")
+                             .resizable()
+                             .scaledToFit()
+                             .frame(width: 20, height: 20)
+                             .padding(8)
+                             .foregroundColor(volumeReduced ? .orange : .white)
+                     }
+                     .background(Circle().fill(Color.black.opacity(0.3)))
+                     .fixedSize()  // This forces the button to be its intrinsic size
+                     .transition(.opacity)
                  }
              },
              alignment: .bottomTrailing
         )
         .animation(.easeInOut, value: connectivityProvider.globalMusicPlaying)
+        .animation(.easeInOut, value: volumeReduced)
+    }
+    
+    private func toggleVolumeReduction() {
+        volumeReduced.toggle()
+        connectivityProvider.sendVolumeControl(reduce: volumeReduced)
+        
+        // Provide haptic feedback
+        WKInterfaceDevice.current().play(volumeReduced ? .click : .notification)
     }
     
     private func startInactivityTimer() {

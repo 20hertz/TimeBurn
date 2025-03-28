@@ -162,6 +162,9 @@ TimeBurn is built on a clear separation of concerns:
 - **WatchTimerView:**  
   Features a large, monospaced countdown, haptic feedback on phase transitions, and adaptive control buttons (showing only a reset button when the timer is completed).
 
+  - **Volume Control:**  
+    The WatchTimerView displays a music note button when audio is playing on the iPhone. Tapping this button reduces iPhone volume by 50%, and tapping again restores it. Implemented using MPVolumeView on iOS and WatchConnectivity for cross-device communication.
+
 - **WatchCreateView:**  
   A swipable interface allowing users to configure a new timer. The view conditionally displays the rest time page only when the number of rounds is not 1, and provides clear navigation and validation.
 
