@@ -83,6 +83,8 @@ struct WatchTimerView: View {
             }
             
             startInactivityTimer()
+            
+            volumeReduced = false
         }
         .onChange(of: engine.phase) { newPhase in
              if newPhase == .active && lastPhase != .active {
@@ -100,6 +102,13 @@ struct WatchTimerView: View {
         .onChange(of: isFocused) { _ in
             startInactivityTimer()
         }
+        .onChange(of: connectivityProvider.globalMusicPlaying) { newValue in
+            // Force UI update when global music playing state changes
+            withAnimation(.easeInOut) {
+                // This empty animation block will ensure the UI updates
+                // when the globalMusicPlaying property changes
+            }
+        }
         .onTapGesture {
              if isFocused {
                  withAnimation(.easeInOut) {
@@ -110,24 +119,24 @@ struct WatchTimerView: View {
             startInactivityTimer()
         }
         .overlay(
-             Group {
-                 if connectivityProvider.globalMusicPlaying {
-                     Button(action: {
-                         toggleVolumeReduction()
-                     }) {
-                         Image(systemName: volumeReduced ? "music.note.list" : "music.note")
-                             .resizable()
-                             .scaledToFit()
-                             .frame(width: 20, height: 20)
-                             .padding(8)
-                             .foregroundColor(volumeReduced ? .orange : .white)
-                     }
-                     .background(Circle().fill(Color.black.opacity(0.3)))
-                     .fixedSize()  // This forces the button to be its intrinsic size
-                     .transition(.opacity)
-                 }
-             },
-             alignment: .bottomTrailing
+            Group {
+                if connectivityProvider.globalMusicPlaying {
+                    Button(action: {
+                        toggleVolumeReduction()
+                    }) {
+                        Image(systemName: volumeReduced ? "music.note.list" : "music.note")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                            .padding(8)
+                            .foregroundColor(volumeReduced ? .orange : .white)
+                    }
+                    .background(Circle().fill(Color.black.opacity(0.3)))
+                    .fixedSize()
+                    .transition(.opacity)
+                }
+            },
+            alignment: .bottomTrailing
         )
         .animation(.easeInOut, value: connectivityProvider.globalMusicPlaying)
         .animation(.easeInOut, value: volumeReduced)

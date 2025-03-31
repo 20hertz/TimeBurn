@@ -19,7 +19,15 @@ class PlaybackMonitor: ObservableObject {
     }
     
     func startMonitoring() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        
+        // Initial check
+        let playing = AVAudioSession.sharedInstance().isOtherAudioPlaying
+        self.localPlaying = playing
+        WatchConnectivityProvider.shared.updateLocalMusicPlaybackState(playing: playing)
+        
+        // Periodic monitoring
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
             let playing = AVAudioSession.sharedInstance().isOtherAudioPlaying
             if playing != self.localPlaying {
                 self.localPlaying = playing
@@ -27,4 +35,5 @@ class PlaybackMonitor: ObservableObject {
             }
         }
     }
+    
 }

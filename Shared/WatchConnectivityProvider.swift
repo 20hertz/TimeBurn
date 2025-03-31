@@ -52,6 +52,26 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
         defaultSession.delegate = self
         defaultSession.activate()
         self.session = defaultSession
+        
+        // Request initial state after session activation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.requestInitialState()
+            
+            // Also, on iOS, check and update the local music state
+            #if os(iOS)
+            let audioSession = AVAudioSession.sharedInstance()
+            let isPlaying = audioSession.isOtherAudioPlaying
+            self.updateLocalMusicPlaybackState(playing: isPlaying)
+            #endif
+        }
+    }
+    
+    public func requestInitialState() {
+        #if os(watchOS)
+        guard let session = session, session.isReachable else { return }
+        let message: [String: Any] = ["requestInitialState": true]
+        session.sendMessage(message, replyHandler: nil, errorHandler: nil)
+        #endif
     }
     
     // MARK: - Timer and Action Methods (unchanged)
@@ -168,7 +188,10 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     
     /// Updates the local music playback state and sends it to the counterpart.
     public func updateLocalMusicPlaybackState(playing: Bool) {
-        localMusicPlaying = playing
+        DispatchQueue.main.async {
+            self.localMusicPlaying = playing
+        }
+        
         #if os(iOS)
         sendMusicPlaybackState(key: "iosMusicPlaying", playing: playing)
         #elseif os(watchOS)
@@ -225,6 +248,16 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
            let reduce = message["reduce"] as? Bool {
             DispatchQueue.main.async {
                 self.handleVolumeControl(reduce: reduce)
+            }
+        }
+        
+        if let isRequest = message["requestInitialState"] as? Bool, isRequest {
+            // Add a small delay to ensure watch is ready to receive
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                // Send current iOS music playback state
+                let audioSession = AVAudioSession.sharedInstance()
+                let isPlaying = audioSession.isOtherAudioPlaying
+                self.updateLocalMusicPlaybackState(playing: isPlaying)
             }
         }
         #endif
