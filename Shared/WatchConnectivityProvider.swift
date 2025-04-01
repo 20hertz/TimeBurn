@@ -137,6 +137,24 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
             print("Error sending volume control message: \(error)")
         }
     }
+    
+    @Published public var volumeReduced: Bool = false
+
+    public func requestVolumeState() {
+        guard let session = session, session.isReachable else { return }
+        
+        let message: [String: Any] = [
+            "requestVolumeState": true
+        ]
+        
+        session.sendMessage(message, replyHandler: { reply in
+            if let state = reply["volumeReduced"] as? Bool {
+                DispatchQueue.main.async {
+                    self.volumeReduced = state
+                }
+            }
+        }, errorHandler: nil)
+    }
     #endif
     
     #if os(iOS)
@@ -192,11 +210,26 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
             self.localMusicPlaying = playing
         }
         
+        // Determine the correct key based on platform
         #if os(iOS)
-        sendMusicPlaybackState(key: "iosMusicPlaying", playing: playing)
-        #elseif os(watchOS)
-        sendMusicPlaybackState(key: "watchMusicPlaying", playing: playing)
+        let key = "iosMusicPlaying"
+        #else
+        let key = "watchMusicPlaying"
         #endif
+        
+        let message: [String: Any] = [key: playing]
+        
+        // Update application context for background state sync
+        do {
+            try session?.updateApplicationContext(message)
+        } catch {
+            print("Error updating music playback context: \(error)")
+        }
+        
+        // Also send direct message if reachable for immediate update
+        if session?.isReachable == true {
+            session?.sendMessage(message, replyHandler: nil, errorHandler: nil)
+        }
     }
     
     /// Sends the local music playback state using the specified key.
@@ -259,6 +292,10 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
                 let isPlaying = audioSession.isOtherAudioPlaying
                 self.updateLocalMusicPlaybackState(playing: isPlaying)
             }
+        }
+        
+        if let requestState = message["requestVolumeState"] as? Bool, requestState {
+            session.sendMessage(["volumeReduced": VolumeControl.shared.isReduced], replyHandler: nil, errorHandler: nil)
         }
         #endif
         

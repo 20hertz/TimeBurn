@@ -84,7 +84,19 @@ struct WatchTimerView: View {
             
             startInactivityTimer()
             
-            volumeReduced = false
+            // Request current volume reduction state from iPhone
+            connectivityProvider.requestVolumeState()
+            
+            // Initialize local state based on provider state
+            volumeReduced = connectivityProvider.volumeReduced
+            
+            // Ensure we have latest playback state
+            connectivityProvider.requestInitialState()
+        }
+
+        // Add an onChange handler for the connectivityProvider.volumeReduced
+        .onChange(of: connectivityProvider.volumeReduced) { newValue in
+            volumeReduced = newValue
         }
         .onChange(of: engine.phase) { newPhase in
              if newPhase == .active && lastPhase != .active {
