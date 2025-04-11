@@ -2,7 +2,7 @@
 
 TimeBurn is a cross-platform interval timer application for iOS and watchOS designed for fitness professionals and gym owners. It allows users to create, edit, and run interval timers with customizable active/rest durations, round counts (including infinite rounds), and optional bell sound cues. The app synchronizes timers between iOS and watchOS devices using a lead device pattern to ensure minimal latency and consistent state.
 
-This README.md is written to provide a comprehensive overview of the project’s architecture, data flow, key components, and coding conventions so that a new AI coding assistant can hit the ground running with this project.
+This README.md is written to provide a comprehensive overview of the project's architecture, data flow, key components, and coding conventions so that a new AI coding assistant can hit the ground running with this project.
 
 ---
 
@@ -28,7 +28,7 @@ TimeBurn is built on a clear separation of concerns:
 
 - **Persistent Configuration:** Managed by `TimerManager` and stored in an App Group, the permanent settings (timer name, active duration, rest duration, round count, and sound setting) are maintained across sessions.
 - **Ephemeral State:** Managed by `TimerEngine`, which handles countdowns, phase transitions (idle, active, rest, completed), and round management in memory.
-- **Synchronization:** The `WatchConnectivityProvider` handles data transfer between iOS and watchOS. When a user performs an action on one device, that device becomes the "lead device" and immediately applies the action locally, then sends the change to the other device for synchronization.
+- **Synchronization:** The `WatchConnectivityProvider` architecture handles data transfer between iOS and watchOS using a class hierarchy approach. When a user performs an action on one device, that device becomes the "lead device" and immediately applies the action locally, then sends the change to the other device for synchronization.
 
 ---
 
@@ -51,8 +51,8 @@ TimeBurn is built on a clear separation of concerns:
 - **ActiveTimerEngines.swift**  
   Provides a global store of `TimerEngine` instances, ensuring that each timer configuration is associated with a unique engine.
 
-- **WatchConnectivityProvider.swift**  
-  Manages data transfer over `WCSession`, sending and receiving full timer lists as well as action events (play, pause, reset) between iOS and watchOS.
+- **WatchConnectivityProviderBase.swift**  
+  Base class that implements common watch connectivity functionality and protocol conformance. Defines the core interface for platform-specific implementations and handles common message processing.
 
 - **Utilities**  
   Contains helper functions such as `formatTime(from:)` and an extension on `IntervalTimer` that generates a `configurationText` string for display in timer rows. This helps DRY up the code and maintain consistency across views.
@@ -63,19 +63,22 @@ TimeBurn is built on a clear separation of concerns:
   The entry point for the iOS app, which sets up the environment with shared objects like `TimerManager`, `WatchConnectivityProvider`, and `NavigationCoordinator`.
 
 - **HomeView.swift**  
-  Displays a list of timers (using `RowView`) or a placeholder when no timers exist. A “+” button in the toolbar navigates to `CreateView`.
+  Displays a list of timers (using `RowView`) or a placeholder when no timers exist. A "+" button in the toolbar navigates to `CreateView`.
 
 - **RowView.swift**  
-  Displays a single timer’s name (or, if empty, its configuration text) and a small indicator if the timer is running. Row height is fixed for consistency.
+  Displays a single timer's name (or, if empty, its configuration text) and a small indicator if the timer is running. Row height is fixed for consistency.
 
 - **TimerView.swift**  
   Shows the countdown (with a circular progress bar), round indicators, and control buttons (Play/Pause, Reset). It also provides navigation to an edit screen.
 
 - **CreateView.swift**  
-  Presents a form (using `TimerForm`) for creating a new timer. It validates that the active duration is greater than 0:00 (showing an alert if not) and, upon saving, navigates directly to the newly created timer’s view.
+  Presents a form (using `TimerForm`) for creating a new timer. It validates that the active duration is greater than 0:00 (showing an alert if not) and, upon saving, navigates directly to the newly created timer's view.
 
 - **EditView.swift**  
-  Similar to CreateView but pre-populated with an existing timer’s configuration for editing. It also validates that the active duration is greater than 0:00.
+  Similar to CreateView but pre-populated with an existing timer's configuration for editing. It also validates that the active duration is greater than 0:00.
+
+- **WatchConnectivityProvider_iOS.swift**  
+  iOS-specific implementation of the WatchConnectivityProvider that handles iOS session lifecycle, volume control implementation, and iOS-specific message handling.
 
 ### watchOS Components
 
@@ -94,6 +97,9 @@ TimeBurn is built on a clear separation of concerns:
 - **WatchCreateView.swift**  
   Provides a swipable interface for creating a new timer directly on the watch. It allows configuration of round duration (active time), number of rounds (with an infinite option), rest time (which is hidden if rounds equal 1), and sound settings.
 
+- **WatchConnectivityProvider_watchOS.swift**  
+  watchOS-specific implementation of the WatchConnectivityProvider that handles volume control requests and watchOS-specific message types.
+
 ---
 
 ## 3. Data Flow and Synchronization
@@ -108,7 +114,16 @@ TimeBurn is built on a clear separation of concerns:
   Actions such as play, pause, and reset are immediately applied on the lead device by calling `applyAction(...)` on TimerEngine. The action, along with a snapshot of ephemeral state, is then sent via WatchConnectivityProvider to the paired device for synchronization.
 
 - **Lead Device Pattern:**  
-  The device that initiates an action becomes the “lead device” and updates its state immediately. The paired device applies the same action based on the received snapshot to stay in sync.
+  The device that initiates an action becomes the "lead device" and updates its state immediately. The paired device applies the same action based on the received snapshot to stay in sync.
+
+- **WatchConnectivity Architecture:**  
+  The app uses a class hierarchy approach for watch connectivity:
+
+  - `WatchConnectivityProviderBase`: Contains common functionality and protocol conformance
+  - `WatchConnectivityProvider_iOS`: iOS-specific implementation
+  - `WatchConnectivityProvider_watchOS`: watchOS-specific implementation
+
+  This architecture separates platform-specific logic from common code, making the codebase more maintainable and easier to extend.
 
 ---
 
@@ -137,7 +152,7 @@ TimeBurn is built on a clear separation of concerns:
   These shared components use wheel pickers for selecting minutes and seconds. The active duration picker disallows 0 seconds, while the rest time picker allows 0 seconds.
 
 - **Navigation:**  
-  Upon saving a timer, the app navigates directly to the timer’s view rather than simply dismissing the form.
+  Upon saving a timer, the app navigates directly to the timer's view rather than simply dismissing the form.
 
 ---
 
@@ -174,6 +189,7 @@ TimeBurn is built on a clear separation of concerns:
 
 - The project is entirely built with SwiftUI.
 - There is a clear separation between persistent configuration (managed by TimerManager and IntervalTimer) and ephemeral state (managed by TimerEngine).
+- The WatchConnectivityProvider uses a class hierarchy to separate platform-specific code from common functionality.
 - Shared utility functions and extensions (e.g., formatting functions and configuration text generation) are centralized in a Utilities file.
 - The code follows consistent naming conventions and uses descriptive commit messages for clarity.
 - Previews are provided for rapid UI iteration.
@@ -186,7 +202,7 @@ TimeBurn is built on a clear separation of concerns:
   An AudioManager (using AVAudioPlayer) handles playback of bell sounds on iOS. It responds to notifications when timer phases change (e.g., starting a round or ending a round).
 
 - **WatchConnectivity:**  
-  A unified provider synchronizes timer configurations and action events between iOS and watchOS devices.
+  A unified provider architecture synchronizes timer configurations and action events between iOS and watchOS devices. The class hierarchy approach (base class + platform-specific subclasses) improves code organization and maintainability.
 
 - **Platform-Specific Adjustments:**  
   iOS and watchOS have distinct UI components (NavigationStack vs. NavigationView, usage of WKInterfaceDevice for watch screen metrics) which are handled appropriately in their respective targets.
