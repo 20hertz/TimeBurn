@@ -128,14 +128,19 @@ public class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDel
     public func sendVolumeControl(reduce: Bool) {
         guard let session = session, session.isReachable else { return }
         
+        // Update our local state immediately
+        DispatchQueue.main.async {
+            self.volumeReduced = reduce
+        }
+        
         let message: [String: Any] = [
             "volumeControl": true,
             "reduce": reduce
         ]
         
-        session.sendMessage(message, replyHandler: nil) { error in
+        session.sendMessage(message, replyHandler: nil, errorHandler: { error in
             print("Error sending volume control message: \(error)")
-        }
+        })
     }
     
     @Published public var volumeReduced: Bool = false

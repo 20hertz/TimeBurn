@@ -155,7 +155,10 @@ struct WatchTimerView: View {
     }
     
     private func toggleVolumeReduction() {
+        // Toggle the state
         volumeReduced.toggle()
+        
+        // Send the command to iOS
         connectivityProvider.sendVolumeControl(reduce: volumeReduced)
         
         // Provide haptic feedback
